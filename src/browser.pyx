@@ -281,6 +281,9 @@ cdef class PyBrowser:
             # DevToolsHandler
             self.allowedClientCallbacks += ["ShowDevTools"]
 
+            # Printing
+            self.allowedClientCallbacks += ["OnFileDialog",  "OnPdfPrintFinished"]
+
         if name not in self.allowedClientCallbacks:
             raise Exception("Browser.SetClientCallback() failed: unknown "
                             "callback: %s" % name)
@@ -596,7 +599,7 @@ cdef class PyBrowser:
         cdef CefPdfPrintSettings pdf_print_settings
         pdf_print_settings.margin_type = settings.get('margin_type') or cef_types.PDF_PRINT_MARGIN_DEFAULT
         pdf_print_settings.header_footer_enabled = settings.get('header_footer_title') or \
-                                                   settings.get('header_footer_url')
+                                                   settings.get('header_footer_url') or 0
         pdf_print_settings.selection_only = settings.get('selection_only') or 0
         pdf_print_settings.landscape = settings.get('landscape') or 0
         pdf_print_settings.backgrounds_enabled = settings.get('backgrounds_enabled') or 0
