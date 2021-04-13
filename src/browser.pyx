@@ -278,8 +278,8 @@ cdef class PyBrowser:
             # FocusHandler
             self.allowedClientCallbacks += ["OnTakeFocus", "OnSetFocus",
                                             "OnGotFocus"]
-            # Printing
-            self.allowedClientCallbacks += ["OnFileDialog",  "OnPdfPrintFinished"]
+            # DevToolsHandler
+            self.allowedClientCallbacks += ["ShowDevTools"]
 
         if name not in self.allowedClientCallbacks:
             raise Exception("Browser.SetClientCallback() failed: unknown "
@@ -556,12 +556,13 @@ cdef class PyBrowser:
             CefSize(max_size[0], max_size[1])
         )
 
-
     cpdef py_void SetBounds(self, int x, int y, int width, int height):
         IF UNAME_SYSNAME == "Linux":
             x11.SetX11WindowBounds(self.GetCefBrowser(), x, y, width, height)
-        ELSE:
-            NonCriticalError("SetBounds() not implemented on this platform")
+        ELIF UNAME_SYSNAME == "Windows":
+            SetWindowPos(<HWND>self.GetWindowHandle(), <HWND>NULL,
+                         0, 0, width, height,
+                         SWP_NOZORDER | SWP_NOMOVE | SWP_NOACTIVATE)
 
     cpdef py_void SetAccessibilityState(self, cef_state_t state):
         self.GetCefBrowserHost().get().SetAccessibilityState(state)
@@ -576,15 +577,19 @@ cdef class PyBrowser:
         self.GetCefBrowserHost().get().SetZoomLevel(zoomLevel)
 
     cpdef py_void ShowDevTools(self):
+        cdef object callback = self.GetClientCallback("ShowDevTools")
         cdef CefWindowInfo window_info
-        IF UNAME_SYSNAME == "Windows":
-            window_info.SetAsPopup(<CefWindowHandle>self.GetWindowHandle(),
-                                   PyToCefStringValue("DevTools"))
         cdef CefBrowserSettings settings
         cdef CefPoint inspect_element_at
-        self.GetCefBrowserHost().get().ShowDevTools(
-                window_info, <CefRefPtr[CefClient]?>NULL, settings,
-                inspect_element_at)
+        if callback:
+            callback(self)
+        else:
+            IF UNAME_SYSNAME == "Windows":
+                window_info.SetAsPopup(<CefWindowHandle>self.GetWindowHandle(),
+                                    PyToCefStringValue("DevTools"))
+            self.GetCefBrowserHost().get().ShowDevTools(
+                    window_info, <CefRefPtr[CefClient]?>NULL, settings,
+                    inspect_element_at)
 
     cpdef py_void PrintToPdf(self, py_string filepath, dict settings, object func = None):
         self.SetClientCallback('OnPdfPrintFinished', func)
