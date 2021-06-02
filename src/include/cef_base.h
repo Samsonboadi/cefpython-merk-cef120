@@ -40,7 +40,7 @@
 #include "include/internal/cef_types_wrappers.h"
 #if defined(OS_WIN)
 #include "include/internal/cef_win.h"
-#elif defined(OS_MAC)
+#elif defined(OS_MACOSX)
 #include "include/internal/cef_mac.h"
 #elif defined(OS_LINUX)
 #include "include/internal/cef_linux.h"

@@ -65,7 +65,7 @@ class CefClient : public virtual CefBaseRefCounted {
   // Return the handler for audio rendering events.
   ///
   /*--cef()--*/
-  virtual CefRefPtr<CefAudioHandler> GetAudioHandler() { return nullptr; }
+  virtual CefRefPtr<CefAudioHandler> GetAudioHandler() { return NULL; }
 
   ///
   // Return the handler for context menus. If no handler is provided the default
@@ -73,7 +73,7 @@ class CefClient : public virtual CefBaseRefCounted {
   ///
   /*--cef()--*/
   virtual CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() {
-    return nullptr;
+    return NULL;
   }
 
   ///
@@ -81,75 +81,75 @@ class CefClient : public virtual CefBaseRefCounted {
   // implementation will be used.
   ///
   /*--cef()--*/
-  virtual CefRefPtr<CefDialogHandler> GetDialogHandler() { return nullptr; }
+  virtual CefRefPtr<CefDialogHandler> GetDialogHandler() { return NULL; }
 
   ///
   // Return the handler for browser display state events.
   ///
   /*--cef()--*/
-  virtual CefRefPtr<CefDisplayHandler> GetDisplayHandler() { return nullptr; }
+  virtual CefRefPtr<CefDisplayHandler> GetDisplayHandler() { return NULL; }
 
   ///
   // Return the handler for download events. If no handler is returned downloads
   // will not be allowed.
   ///
   /*--cef()--*/
-  virtual CefRefPtr<CefDownloadHandler> GetDownloadHandler() { return nullptr; }
+  virtual CefRefPtr<CefDownloadHandler> GetDownloadHandler() { return NULL; }
 
   ///
   // Return the handler for drag events.
   ///
   /*--cef()--*/
-  virtual CefRefPtr<CefDragHandler> GetDragHandler() { return nullptr; }
+  virtual CefRefPtr<CefDragHandler> GetDragHandler() { return NULL; }
 
   ///
   // Return the handler for find result events.
   ///
   /*--cef()--*/
-  virtual CefRefPtr<CefFindHandler> GetFindHandler() { return nullptr; }
+  virtual CefRefPtr<CefFindHandler> GetFindHandler() { return NULL; }
 
   ///
   // Return the handler for focus events.
   ///
   /*--cef()--*/
-  virtual CefRefPtr<CefFocusHandler> GetFocusHandler() { return nullptr; }
+  virtual CefRefPtr<CefFocusHandler> GetFocusHandler() { return NULL; }
 
   ///
   // Return the handler for JavaScript dialogs. If no handler is provided the
   // default implementation will be used.
   ///
   /*--cef()--*/
-  virtual CefRefPtr<CefJSDialogHandler> GetJSDialogHandler() { return nullptr; }
+  virtual CefRefPtr<CefJSDialogHandler> GetJSDialogHandler() { return NULL; }
 
   ///
   // Return the handler for keyboard events.
   ///
   /*--cef()--*/
-  virtual CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() { return nullptr; }
+  virtual CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() { return NULL; }
 
   ///
   // Return the handler for browser life span events.
   ///
   /*--cef()--*/
-  virtual CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() { return nullptr; }
+  virtual CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() { return NULL; }
 
   ///
   // Return the handler for browser load status events.
   ///
   /*--cef()--*/
-  virtual CefRefPtr<CefLoadHandler> GetLoadHandler() { return nullptr; }
+  virtual CefRefPtr<CefLoadHandler> GetLoadHandler() { return NULL; }
 
   ///
   // Return the handler for off-screen rendering events.
   ///
   /*--cef()--*/
-  virtual CefRefPtr<CefRenderHandler> GetRenderHandler() { return nullptr; }
+  virtual CefRefPtr<CefRenderHandler> GetRenderHandler() { return NULL; }
 
   ///
   // Return the handler for browser request events.
   ///
   /*--cef()--*/
-  virtual CefRefPtr<CefRequestHandler> GetRequestHandler() { return nullptr; }
+  virtual CefRefPtr<CefRequestHandler> GetRequestHandler() { return NULL; }
 
   ///
   // Called when a new message is received from a different process. Return true
@@ -158,7 +158,6 @@ class CefClient : public virtual CefBaseRefCounted {
   ///
   /*--cef()--*/
   virtual bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
-                                        CefRefPtr<CefFrame> frame,
                                         CefProcessId source_process,
                                         CefRefPtr<CefProcessMessage> message) {
     return false;

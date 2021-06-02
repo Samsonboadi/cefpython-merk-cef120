@@ -52,6 +52,7 @@
 /*--cef(source=client)--*/
 class CefRenderHandler : public virtual CefBaseRefCounted {
  public:
+  typedef cef_cursor_type_t CursorType;
   typedef cef_drag_operations_mask_t DragOperation;
   typedef cef_drag_operations_mask_t DragOperationsMask;
   typedef cef_paint_element_type_t PaintElementType;
@@ -64,7 +65,7 @@ class CefRenderHandler : public virtual CefBaseRefCounted {
   ///
   /*--cef()--*/
   virtual CefRefPtr<CefAccessibilityHandler> GetAccessibilityHandler() {
-    return nullptr;
+    return NULL;
   }
 
   ///
@@ -160,6 +161,16 @@ class CefRenderHandler : public virtual CefBaseRefCounted {
                                   PaintElementType type,
                                   const RectList& dirtyRects,
                                   void* shared_handle) {}
+
+  ///
+  // Called when the browser's cursor has changed. If |type| is CT_CUSTOM then
+  // |custom_cursor_info| will be populated with the custom cursor information.
+  ///
+  /*--cef()--*/
+  virtual void OnCursorChange(CefRefPtr<CefBrowser> browser,
+                              CefCursorHandle cursor,
+                              CursorType type,
+                              const CefCursorInfo& custom_cursor_info) {}
 
   ///
   // Called when the user starts dragging content in the web view. Contextual

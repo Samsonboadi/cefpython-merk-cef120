@@ -277,6 +277,7 @@ from cef_callback cimport *
 from cef_response cimport *
 from cef_resource_handler cimport *
 from resource_handler cimport *
+from print_callback cimport *
 from cef_urlrequest cimport *
 from web_request_client cimport *
 from cef_command_line cimport *
@@ -355,6 +356,7 @@ include "cookie.pyx"
 include "string_visitor.pyx"
 include "network_error.pyx"
 include "paint_buffer.pyx"
+include "pdf_print_handler.pyx"
 include "callback.pyx"
 include "response.pyx"
 include "web_request.pyx"
