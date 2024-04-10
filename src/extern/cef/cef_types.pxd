@@ -8,7 +8,7 @@ from libcpp cimport bool as cpp_bool
 # noinspection PyUnresolvedReferences
 from libc.stddef cimport wchar_t
 # noinspection PyUnresolvedReferences
-from libc.stdint cimport int32_t, uint32_t, int64_t, uint64_t
+from libc.stdint cimport int16_t, uint16_t, int32_t, uint32_t, int64_t, uint64_t
 from cef_string cimport cef_string_t
 # noinspection PyUnresolvedReferences
 from libc.limits cimport UINT_MAX
@@ -26,40 +26,45 @@ cdef extern from "include/internal/cef_types.h":
 
     IF UNAME_SYSNAME == "Windows":
         # noinspection PyUnresolvedReferences
-        ctypedef wchar_t char16
+        #TODO: revisit me
+        ctypedef uint16_t char16
     ELSE:
         ctypedef unsigned short char16
 
-    ctypedef uint32 cef_color_t
+    ctypedef uint32_t cef_color_t
 
     ctypedef struct CefSettings:
-        cef_string_t accept_language_list
+        # size_t size
+        int no_sandbox
         cef_string_t browser_subprocess_path
+        cef_string_t framework_dir_path
+        cef_string_t main_bundle_path
+        int chrome_runtime
+        int multi_threaded_message_loop
+        int external_message_pump
+        int windowless_rendering_enabled
         int command_line_args_disabled
         cef_string_t cache_path
-        int enable_net_security_expiration
+        cef_string_t root_cache_path
         int persist_session_cookies
+        int persist_user_preferences
         cef_string_t user_agent
-        cef_string_t product_version
+        cef_string_t user_agent_product
         cef_string_t locale
         cef_string_t log_file
         int log_severity
-        int multi_threaded_message_loop
+        int log_items # not exposed.
         cef_string_t javascript_flags
         cef_string_t resources_dir_path
         cef_string_t locales_dir_path
         int pack_loading_disabled
         int remote_debugging_port
         int uncaught_exception_stack_size
-        int context_safety_implementation # Not exposed.
-        int ignore_certificate_errors
         cef_color_t background_color
-        int persist_user_preferences
-        cef_string_t user_data_path
-        int windowless_rendering_enabled
-        int no_sandbox
-        int external_message_pump
-        cef_string_t framework_dir_path
+        cef_string_t accept_language_list
+        cef_string_t cookieable_schemes_list
+        int cookieable_schemes_exclude_defaults
+        cef_string_t chrome_policy_id
 
     ctypedef enum cef_pdf_print_margin_type_t:
         PDF_PRINT_MARGIN_DEFAULT,
@@ -68,24 +73,24 @@ cdef extern from "include/internal/cef_types.h":
         PDF_PRINT_MARGIN_CUSTOM,
 
     ctypedef struct CefPdfPrintSettings:
-        cef_string_t header_footer_title
-        cef_string_t header_footer_url
-        int page_width
-        int page_height
-        int scale_factor
+        int landscape
+        int print_background
+        double scale
+        double paper_width
+        double paper_height
+        int prefer_css_page_size
+        cef_pdf_print_margin_type_t margin_type
         double margin_top
         double margin_right
         double margin_bottom
         double margin_left
-        cef_pdf_print_margin_type_t margin_type
-        int header_footer_enabled
-        int selection_only
-        int landscape
-        int backgrounds_enabled
+        cef_string_t page_ranges
+        int display_header_footer
+        cef_string_t header_template
+        cef_string_t footer_template
 
     ctypedef struct CefBrowserSettings:
-        cef_string_t accept_language_list
-        cef_color_t background_color
+        int windowless_frame_rate
         cef_string_t standard_font_family
         cef_string_t fixed_font_family
         cef_string_t serif_font_family
@@ -102,19 +107,16 @@ cdef extern from "include/internal/cef_types.h":
         cef_state_t javascript_close_windows
         cef_state_t javascript_access_clipboard
         cef_state_t javascript_dom_paste
-        cef_state_t plugins
-        cef_state_t universal_access_from_file_urls
-        cef_state_t file_access_from_file_urls
-        cef_state_t web_security
         cef_state_t image_loading
         cef_state_t image_shrink_standalone_to_fit
         cef_state_t text_area_resize
         cef_state_t tab_to_links
         cef_state_t local_storage
         cef_state_t databases
-        cef_state_t application_cache
         cef_state_t webgl
-        int windowless_frame_rate
+        cef_color_t background_color
+        # chrome_status_bubble
+        # chrome_zoom_bubble
 
     cdef cppclass CefRect:
         int x, y, width, height
@@ -140,14 +142,23 @@ cdef extern from "include/internal/cef_types.h":
         LOGSEVERITY_INFO,
         LOGSEVERITY_WARNING,
         LOGSEVERITY_ERROR,
+        LOGSEVERITY_FATAL,
         LOGSEVERITY_DISABLE = 99,
+        
+    ctypedef enum cef_log_items_t:
+        LOG_ITEMS_DEFAULT = 0,
+        LOG_ITEMS_NONE = 1,
+        LOG_ITEMS_FLAG_PROCESS_ID = 1 << 1,
+        LOG_ITEMS_FLAG_THREAD_ID = 1 << 2,
+        LOG_ITEMS_FLAG_TIME_STAMP = 1 << 3,
+        LOG_ITEMS_FLAG_TICK_COUNT = 1 << 4,
 
     ctypedef enum cef_thread_id_t:
         TID_UI,
         TID_FILE_BACKGROUND
-        TID_FILE,
         TID_FILE_USER_VISIBLE,
         TID_FILE_USER_BLOCKING,
+        TID_PROCESS_LAUNCHER,
         TID_IO,
         TID_RENDERER
 
@@ -179,17 +190,18 @@ cdef extern from "include/internal/cef_types.h":
         PDE_TYPE_EMPTY  = 0,
         PDE_TYPE_BYTES,
         PDE_TYPE_FILE,
-        
+
     # WebRequest
     ctypedef enum cef_urlrequest_flags_t:
         UR_FLAG_NONE = 0,
         UR_FLAG_SKIP_CACHE = 1 << 0,
         UR_FLAG_ONLY_FROM_CACHE = 1 << 1,
-        UR_FLAG_ALLOW_STORED_CREDENTIALS = 1 << 2,
-        UR_FLAG_REPORT_UPLOAD_PROGRESS = 1 << 3,
-        UR_FLAG_NO_DOWNLOAD_DATA = 1 << 4,
-        UR_FLAG_NO_RETRY_ON_5XX = 1 << 5,
-        UR_FLAG_STOP_ON_REDIRECT = 1 << 6,
+        UR_FLAG_DISABLE_CACHE = 1 << 2,
+        UR_FLAG_ALLOW_STORED_CREDENTIALS = 1 << 3,
+        UR_FLAG_REPORT_UPLOAD_PROGRESS = 1 << 4,
+        UR_FLAG_NO_DOWNLOAD_DATA = 1 << 5,
+        UR_FLAG_NO_RETRY_ON_5XX = 1 << 6,
+        UR_FLAG_STOP_ON_REDIRECT = 1 << 7,
 
     # CefListValue, CefDictionaryValue - types.
     ctypedef enum cef_value_type_t:
@@ -212,12 +224,12 @@ cdef extern from "include/internal/cef_types.h":
         KEYEVENT_CHAR
     ctypedef struct _cef_key_event_t:
         cef_key_event_type_t type
-        uint32 modifiers
+        uint32_t modifiers
         int windows_key_code
         int native_key_code
         int is_system_key
-        char16 character
-        char16 unmodified_character
+        uint16_t character
+        uint16_t unmodified_character
         cpp_bool focus_on_editable_field
     ctypedef _cef_key_event_t CefKeyEvent
     ctypedef enum cef_event_flags_t:
@@ -235,12 +247,28 @@ cdef extern from "include/internal/cef_types.h":
         EVENTFLAG_IS_KEY_PAD          = 1 << 9,
         EVENTFLAG_IS_LEFT             = 1 << 10,
         EVENTFLAG_IS_RIGHT            = 1 << 11,
+        EVENTFLAG_ALTGR_DOWN          = 1 << 12,
+        EVENTFLAG_IS_REPEAT           = 1 << 13,
+
+    # Cookie priority values.
+    ctypedef enum cef_cookie_priority_t:
+        CEF_COOKIE_PRIORITY_LOW = -1,
+        CEF_COOKIE_PRIORITY_MEDIUM = 0,
+        CEF_COOKIE_PRIORITY_HIGH = 1,
+
+    # Cookie same site values.
+    ctypedef enum cef_cookie_same_site_t:
+        CEF_COOKIE_SAME_SITE_UNSPECIFIED,
+        CEF_COOKIE_SAME_SITE_NO_RESTRICTION,
+        CEF_COOKIE_SAME_SITE_LAX_MODE,
+        CEF_COOKIE_SAME_SITE_STRICT_MODE,
 
     # LoadHandler
     ctypedef enum cef_termination_status_t:
         TS_ABNORMAL_TERMINATION,
         TS_PROCESS_WAS_KILLED,
         TS_PROCESS_CRASHED,
+        TS_PROCESS_OOM,
 
     ctypedef enum cef_errorcode_t:
         ERR_NONE = 0,
@@ -308,7 +336,7 @@ cdef extern from "include/internal/cef_types.h":
     ctypedef struct cef_mouse_event_t:
         int x
         int y
-        uint32 modifiers
+        uint32_t modifiers
     ctypedef cef_mouse_event_t CefMouseEvent
 
     # RenderHandler > GetScreenInfo():
@@ -344,16 +372,16 @@ cdef extern from "include/internal/cef_types.h":
     # LifespanHandler and RequestHandler
 
     ctypedef enum cef_window_open_disposition_t:
-        WOD_UNKNOWN,
-        WOD_CURRENT_TAB,
-        WOD_SINGLETON_TAB,
-        WOD_NEW_FOREGROUND_TAB,
-        WOD_NEW_BACKGROUND_TAB,
-        WOD_NEW_POPUP,
-        WOD_NEW_WINDOW,
-        WOD_SAVE_TO_DISK,
-        WOD_OFF_THE_RECORD,
-        WOD_IGNORE_ACTION
+        CEF_WOD_UNKNOWN,
+        CEF_WOD_CURRENT_TAB,
+        CEF_WOD_SINGLETON_TAB,
+        CEF_WOD_NEW_FOREGROUND_TAB,
+        CEF_WOD_NEW_BACKGROUND_TAB,
+        CEF_WOD_NEW_POPUP,
+        CEF_WOD_NEW_WINDOW,
+        CEF_WOD_SAVE_TO_DISK,
+        CEF_WOD_OFF_THE_RECORD,
+        CEF_WOD_IGNORE_ACTION
     ctypedef cef_window_open_disposition_t WindowOpenDisposition
 
     ctypedef enum cef_path_key_t:
@@ -367,12 +395,6 @@ cdef extern from "include/internal/cef_types.h":
         PK_USER_DATA,
         PK_DIR_RESOURCES,
     ctypedef cef_path_key_t PathKey
-
-    ctypedef enum cef_plugin_policy_t:
-        PLUGIN_POLICY_ALLOW,
-        PLUGIN_POLICY_DETECT_IMPORTANT,
-        PLUGIN_POLICY_BLOCK,
-        PLUGIN_POLICY_DISABLE,
 
     # Drag & drop
 
@@ -400,5 +422,39 @@ cdef extern from "include/internal/cef_types.h":
         FOCUS_SOURCE_SYSTEM,
 
     cdef cppclass CefRange:
-        int from_val "from"
-        int to_val "to"
+        uint32_t from_val "from"
+        uint32_t to_val "to"
+
+    # Download interrupt reasons.
+    ctypedef enum cef_download_interrupt_reason_t:
+        CEF_DOWNLOAD_INTERRUPT_REASON_NONE = 0
+        CEF_DOWNLOAD_INTERRUPT_REASON_FILE_FAILED = 1
+        CEF_DOWNLOAD_INTERRUPT_REASON_FILE_ACCESS_DENIED = 2
+        CEF_DOWNLOAD_INTERRUPT_REASON_FILE_NO_SPACE = 3
+        CEF_DOWNLOAD_INTERRUPT_REASON_FILE_NAME_TOO_LONG = 5
+        CEF_DOWNLOAD_INTERRUPT_REASON_FILE_TOO_LARGE = 6
+        CEF_DOWNLOAD_INTERRUPT_REASON_FILE_VIRUS_INFECTED = 7
+        CEF_DOWNLOAD_INTERRUPT_REASON_FILE_TRANSIENT_ERROR = 10
+        CEF_DOWNLOAD_INTERRUPT_REASON_FILE_BLOCKED = 11
+        CEF_DOWNLOAD_INTERRUPT_REASON_FILE_SECURITY_CHECK_FAILED = 12
+        CEF_DOWNLOAD_INTERRUPT_REASON_FILE_TOO_SHORT = 13
+        CEF_DOWNLOAD_INTERRUPT_REASON_FILE_HASH_MISMATCH = 14
+        CEF_DOWNLOAD_INTERRUPT_REASON_FILE_SAME_AS_SOURCE = 15
+        CEF_DOWNLOAD_INTERRUPT_REASON_NETWORK_FAILED = 20
+        CEF_DOWNLOAD_INTERRUPT_REASON_NETWORK_TIMEOUT = 21
+        CEF_DOWNLOAD_INTERRUPT_REASON_NETWORK_DISCONNECTED = 22
+        CEF_DOWNLOAD_INTERRUPT_REASON_NETWORK_SERVER_DOWN = 23
+        CEF_DOWNLOAD_INTERRUPT_REASON_NETWORK_INVALID_REQUEST = 24
+        CEF_DOWNLOAD_INTERRUPT_REASON_SERVER_FAILED = 30
+        CEF_DOWNLOAD_INTERRUPT_REASON_SERVER_NO_RANGE = 31
+        CEF_DOWNLOAD_INTERRUPT_REASON_SERVER_BAD_CONTENT = 33
+        CEF_DOWNLOAD_INTERRUPT_REASON_SERVER_UNAUTHORIZED = 34
+        CEF_DOWNLOAD_INTERRUPT_REASON_SERVER_CERT_PROBLEM = 35
+        CEF_DOWNLOAD_INTERRUPT_REASON_SERVER_FORBIDDEN = 36
+        CEF_DOWNLOAD_INTERRUPT_REASON_SERVER_UNREACHABLE = 37
+        CEF_DOWNLOAD_INTERRUPT_REASON_SERVER_CONTENT_LENGTH_MISMATCH = 38
+        CEF_DOWNLOAD_INTERRUPT_REASON_SERVER_CROSS_ORIGIN_REDIRECT = 39
+        CEF_DOWNLOAD_INTERRUPT_REASON_USER_CANCELED = 40,
+        CEF_DOWNLOAD_INTERRUPT_REASON_USER_SHUTDOWN = 41,
+        CEF_DOWNLOAD_INTERRUPT_REASON_CRASH = 50
+    ctypedef cef_download_interrupt_reason_t DownloadInterruptReason

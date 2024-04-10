@@ -1,3 +1,4 @@
+
 # Copyright (c) 2017 CEF Python, see the Authors file.
 # All rights reserved. Licensed under BSD 3-clause license.
 # Project website: https://github.com/cztomczak/cefpython
@@ -218,6 +219,9 @@ SUBPROCESS_EXE = os.path.join(BUILD_SUBPROCESS,
 # -----------------------------------------------------------------------------
 
 VS_PLATFORM_ARG = "x86" if ARCH32 else "amd64"
+
+VS2022_VCVARS = (r"C:\Program Files\Microsoft Visual Studio"
+                 r"\2022\Community\VC\Auxiliary\Build\vcvarsall.bat")
 
 VS2019_VCVARS = (r"C:\Program Files (x86)\Microsoft Visual Studio"
                  r"\2019\Community\VC\Auxiliary\Build\vcvarsall.bat")
@@ -453,8 +457,14 @@ def get_cefpython_version():
     return get_version_from_file(header_file)
 
 
+def get_cefpython_api_hash():
+    """Get CEF API hash from the 'src/version/' directory."""
+    header_file = os.path.join(SRC_DIR, "version","cef_api_hash.h")
+    return get_version_from_file(header_file)
+
+
 def get_version_from_file(header_file):
-    with open(header_file, "rU") as fp:
+    with open(header_file, "r") as fp:
         contents = fp.read()  # no need to decode() as "rU" specified
     ret = dict()
     matches = re.findall(r'^#define (\w+) "?([^\s"]+)"?', contents,
@@ -478,6 +488,10 @@ def get_msvs_for_python(vs_prefix=False):
         return "VS2019" if vs_prefix else "2019"
     elif sys.version_info[:2] == (3, 9):
         return "VS2019" if vs_prefix else "2019"
+    elif sys.version_info[:2] == (3, 10):
+        return "VS2022" if vs_prefix else "2022"
+    elif sys.version_info[:2] == (3, 11):
+        return "VS2022" if vs_prefix else "2022"
     else:
         print("ERROR: This version of Python is not supported")
         sys.exit(1)

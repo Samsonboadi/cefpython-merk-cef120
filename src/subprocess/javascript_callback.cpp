@@ -30,7 +30,7 @@ CefString PutJavascriptCallback(
     // {"what":"javascript-callback","callbackId":123,
     //  "frameId":123,"functionName":"xx"}
     int callbackId = ++g_jsCallbackMaxId;
-    int64 frameId = frame->GetIdentifier();
+    int64_t frameId = frame->GetIdentifier();
     CefString functionName = jsCallback->GetFunctionName();
     std::string strCallbackId = "####cefpython####";
     strCallbackId.append("{");
@@ -69,7 +69,7 @@ bool ExecuteJavascriptCallback(int callbackId, CefRefPtr<CefListValue> args) {
     context->Enter();
     CefV8ValueList v8Arguments = CefListValueToCefV8ValueList(args);
     CefRefPtr<CefV8Value> v8ReturnValue = callback->ExecuteFunction(
-            NULL, v8Arguments);
+            nullptr, v8Arguments);
     if (v8ReturnValue.get()) {
         context->Exit();
         return true;
@@ -86,7 +86,7 @@ void RemoveJavascriptCallbacksForFrame(CefRefPtr<CefFrame> frame) {
         return;
     }
     JavascriptCallbackMap::iterator it = g_jsCallbackMap.begin();
-    int64 frameId = frame->GetIdentifier();
+    int64_t frameId = frame->GetIdentifier();
     while (it != g_jsCallbackMap.end()) {
         if (it->second.first->GetIdentifier() == frameId) {
             // Pass current iterator and increment it after passing

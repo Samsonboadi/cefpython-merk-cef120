@@ -41,8 +41,8 @@ cdef object CefValueToPyValue(CefRefPtr[CefValue] cefValue):
     assert cefValue.get().IsValid(), "cefValue is invalid"
     cdef cef_types.cef_value_type_t valueType = cefValue.get().GetType()
     cdef CefRefPtr[CefBinaryValue] binaryValue
-    cdef uint32 uint32_value = 0
-    cdef int64 int64_value = 0
+    cdef uint32_t uint32_value = 0
+    cdef int64_t int64_value = 0
 
     if valueType == cef_types.VTYPE_NULL:
         return None
@@ -56,12 +56,12 @@ cdef object CefValueToPyValue(CefRefPtr[CefValue] cefValue):
         return CefToPyString(cefValue.get().GetString())
     elif valueType == cef_types.VTYPE_DICTIONARY:
         return CefDictionaryValueToPyDict(
-                <CefRefPtr[CefBrowser]>NULL,
+                <CefRefPtr[CefBrowser]>nullptr,
                 cefValue.get().GetDictionary(),
                 1)
     elif valueType == cef_types.VTYPE_LIST:
         return CefListValueToPyList(
-                <CefRefPtr[CefBrowser]>NULL,
+                <CefRefPtr[CefBrowser]>nullptr,
                 cefValue.get().GetList(),
                 1)
     elif valueType == cef_types.VTYPE_BINARY:
@@ -92,13 +92,13 @@ cdef list CefListValueToPyList(
     if nestingLevel > 8:
         raise Exception("CefListValueToPyList(): max nesting level (8)"
                 " exceeded")
-    cdef size_t index
-    cdef size_t size = cefListValue.get().GetSize()
+    cdef int index
+    cdef int size = int(cefListValue.get().GetSize())
     cdef cef_types.cef_value_type_t valueType
     cdef list ret = []
     cdef CefRefPtr[CefBinaryValue] binaryValue
-    cdef uint32 uint32_value = 0
-    cdef int64 int64_value = 0
+    cdef uint32_t uint32_value = 0
+    cdef int64_t int64_value = 0
     cdef object originallyString
     for index in range(0, size):
         valueType = cefListValue.get().GetType(index)
@@ -162,8 +162,8 @@ cdef dict CefDictionaryValueToPyDict(
     cdef CefString cefKey
     cdef py_string pyKey
     cdef CefRefPtr[CefBinaryValue] binaryValue
-    cdef uint32 uint32_value = 0
-    cdef int64 int64_value = 0
+    cdef uint32_t uint32_value = 0
+    cdef int64_t int64_value = 0
     cdef object originallyString
     while iterator != keyList.end():
         # noinspection PyUnresolvedReferences
@@ -230,7 +230,7 @@ cdef CefRefPtr[CefListValue] PyListToCefListValue(
     cdef type valueType
     cdef CefRefPtr[CefListValue] ret = CefListValue_Create()
     cdef CefRefPtr[CefBinaryValue] binaryValue
-    cdef size_t index
+    cdef int index
     for index_size_t, value in enumerate(pyList):
         index = int(index_size_t)
         valueType = type(value)
@@ -289,7 +289,7 @@ cdef void PyListToExistingCefListValue(
                 " exceeded")
     cdef type valueType
     cdef CefRefPtr[CefListValue] newCefListValue
-    cdef size_t index
+    cdef int index
     for index_size_t, value in enumerate(pyList):
         index = int(index_size_t)
         valueType = type(value)
