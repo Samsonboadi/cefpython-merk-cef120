@@ -63,6 +63,7 @@ Table of contents:
   * [Invalidate](#invalidate)
   * [IsFullscreen](#isfullscreen)
   * [IsLoading](#isloading)
+  * [IsMouseCursorChangeDisabled](#ismousecursorchangedisabled)
   * [IsPopup](#ispopup)
   * [IsWindowRenderingDisabled](#iswindowrenderingdisabled)
   * [LoadUrl](#loadurl)
@@ -76,16 +77,17 @@ Table of contents:
   * [ReplaceMisspelling](#replacemisspelling)
   * [SetAutoResizeEnabled](#setautoresizeenabled)
   * [SetBounds](#setbounds)
-  * [SendExternalBeginFrame](#SendExternalBeginFrame)
   * [SendKeyEvent](#sendkeyevent)
   * [SendMouseClickEvent](#sendmouseclickevent)
   * [SendMouseMoveEvent](#sendmousemoveevent)
   * [SendMouseWheelEvent](#sendmousewheelevent)
+  * [SendFocusEvent](#sendfocusevent)
   * [SendCaptureLostEvent](#sendcapturelostevent)
   * [SetAccessibilityState](#setaccessibilitystate)
   * [SetClientCallback](#setclientcallback)
   * [SetClientHandler](#setclienthandler)
   * [SetFocus](#setfocus)
+  * [SetMouseCursorChangeDisabled](#setmousecursorchangedisabled)
   * [SetJavascriptBindings](#setjavascriptbindings)
   * [SetUserData](#setuserdata)
   * [SetZoomLevel](#setzoomlevel)
@@ -320,6 +322,7 @@ Calling javascript from native code synchronously is not possible in CEF 3. It i
 
 | Parameter | Type |
 | --- | --- |
+| searchId | int |
 | searchText | string |
 | forward | bool |
 | matchCase | bool |
@@ -373,7 +376,7 @@ Returns the focused [Frame](Frame.md) for the browser window.
 | name | string |
 | __Return__ | Frame |
 
-Returns the [Frame](Frame.md) with the specified name, or NULL if not found. 
+Returns the [Frame](Frame.md) with the specified name, or NULL if not found.
 
 
 ### GetFrameByIdentifier
@@ -656,6 +659,17 @@ Available only in CEF 3. Not yet implemented.
 Returns true if the browser is currently loading.
 
 
+### IsMouseCursorChangeDisabled
+
+| | |
+| --- | --- |
+| __Return__ | bool |
+
+Available only in CEF 3.
+
+Returns true if mouse cursor change is disabled.
+
+
 ### IsPopup
 
 | | |
@@ -682,6 +696,13 @@ Returns true if window rendering is disabled.
 | __Return__ | void |
 
 Load url in the main frame.
+
+If the url is a local path it needs to start with the `file://` prefix.
+If the url contains special characters it may need proper handling.
+Starting with v66.1+ it is required for the app code to encode the url
+properly. You can use the `pathlib.PurePath.as_uri` in Python 3
+or `urllib.pathname2url` in Python 2 (`urllib.request.pathname2url`
+in Python 3) depending on your case.
 
 
 ### Navigate
@@ -796,16 +817,6 @@ Description from upstream CEF:
 Linux-only. Set window bounds.
 
 
-### SendExternalBeginFrame
-
-| | |
-| --- | --- |
-| __Return__ | void |
-
-Issue a BeginFrame request to Chromium.  Only valid when
-CefWindowInfo::external_begin_frame_enabled is set to true.
-
-
 ### SendKeyEvent
 
 | Parameter | Type |
@@ -852,7 +863,6 @@ cefpython.`MOUSEBUTTON_RIGHT`
 * EVENTFLAG_IS_KEY_PAD (Mac)
 * EVENTFLAG_IS_LEFT (Mac)
 * EVENTFLAG_IS_RIGHT (Mac)
-* EVENTFLAG_ALTGR_DOWN (Mac)
 
 
 ### SendMouseMoveEvent
@@ -882,6 +892,16 @@ flags see SendMouseClickEvent().
 | __Return__ | void |
 
 Send a mouse wheel event to the browser. The |x| and |y| coordinates are relative to the upper-left corner of the view. The |deltaX| and |deltaY| values represent the movement delta in the X and Y directions respectively. In order to scroll inside select popups with window rendering disabled [RenderHandler](RenderHandler.md).GetScreenPoint() should be implemented properly. For a list of modifiers flags see SendMouseClickEvent().
+
+
+### SendFocusEvent
+
+| Parameter | Type |
+| --- | --- |
+| setFocus | bool |
+| __Return__ | void |
+
+Send a focus event to the browser.
 
 
 ### SendCaptureLostEvent
@@ -966,6 +986,16 @@ LifespanHandler etc.
 | __Return__ | void |
 
 Set whether the browser is focused.
+
+
+### SetMouseCursorChangeDisabled
+
+| Parameter | Type |
+| --- | --- |
+| disabled | bool |
+| __Return__ | void |
+
+Set whether mouse cursor change is disabled.
 
 
 ### SetJavascriptBindings

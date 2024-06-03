@@ -4,7 +4,6 @@
 
 include "cefpython.pyx"
 
-cimport cef_types
 from task cimport *
 
 # ------------------------------------------------------------------------------
@@ -65,13 +64,9 @@ cdef class Cookie:
             elif key == "lastAccess":
                 self.SetLastAccess(cookie[key])
             elif key == "hasExpires":
-                self.SetHasExpires(cookie[key])
+                    self.SetHasExpires(cookie[key])
             elif key == "expires":
                 self.SetExpires(cookie[key])
-            elif key == "sameSite":
-                self.SetSameSite(cookie[key])
-            elif key == "priority":
-                self.SetPriority(cookie[key])
             else:
                 raise Exception("Invalid key: %s" % key)
 
@@ -87,8 +82,6 @@ cdef class Cookie:
             "lastAccess": self.GetLastAccess(),
             "hasExpires": self.GetHasExpires(),
             "expires": self.GetExpires(),
-            "sameSite": self.GetSameSite(),
-            "priority": self.GetPriority(),
         }
 
     cpdef py_void SetName(self, py_string name):
@@ -126,6 +119,19 @@ cdef class Cookie:
         return CefToPyString(cefString)
 
     cpdef py_void SetDomain(self, py_string domain):
+        pattern = re.compile(r"^(?:[a-z0-9](?:[a-z0-9-_]{0,61}[a-z0-9])?\.)"
+                             r"+[a-z0-9][a-z0-9-_]{0,61}[a-z]$")
+        if PY_MAJOR_VERSION == 2:
+            assert isinstance(domain, bytes), "domain type is not bytes"
+            domain = domain.decode(g_applicationSettings["string_encoding"],
+                                   errors=BYTES_DECODE_ERRORS)
+        try:
+            if not pattern.match(domain.encode("idna").decode("ascii")):
+                raise Exception("Cookie.SetDomain() failed, invalid domain: {0}"
+                                .format(domain))
+        except UnicodeError:
+            raise Exception("Cookie.SetDomain() failed, invalid domain: {0}"
+                                .format(domain))
         cdef CefString cefString
         cefString.Attach(&self.cefCookie.domain, False)
         PyToCefString(domain, cefString)
@@ -161,16 +167,20 @@ cdef class Cookie:
         return self.cefCookie.httponly
 
     cpdef py_void SetCreation(self, object creation):
-        self.cefCookie.creation.val = creation
+        # DatetimeToCefBasetimeT(creation, self.cefCookie.creation)
+        pass
 
     cpdef object GetCreation(self):
-        return self.cefCookie.creation.val
+        # return CefBasetimeTToDatetime(self.cefCookie.creation)
+        pass
 
     cpdef py_void SetLastAccess(self, object lastAccess):
-        self.cefCookie.last_access.val = lastAccess
+        # DatetimeToCefBasetimeT(lastAccess, self.cefCookie.last_access)
+        pass
 
     cpdef object GetLastAccess(self):
-        return self.cefCookie.last_access.val
+        # return CefBasetimeTToDatetime(self.cefCookie.last_access)
+        pass
 
     cpdef py_void SetHasExpires(self, py_bool hasExpires):
         self.cefCookie.has_expires = bool(hasExpires)
@@ -179,29 +189,20 @@ cdef class Cookie:
         return self.cefCookie.has_expires
 
     cpdef py_void SetExpires(self, object expires):
-        self.cefCookie.expires.val = expires
+        # DatetimeToCefBasetimeT(expires, self.cefCookie.expires)
+        pass
 
     cpdef object GetExpires(self):
-        return self.cefCookie.expires.val
-    
-    cpdef py_void SetSameSite(self, cef_cookie_same_site_t sameSite):
-        self.cefCookie.sameSite = sameSite
-
-    cpdef cef_cookie_same_site_t GetSameSite(self) except *:
-        return self.cefCookie.sameSite
-
-    cpdef py_void SetPriority(self, cef_cookie_priority_t priority):
-        self.cefCookie.priority = priority
-
-    cpdef cef_cookie_priority_t GetPriority(self) except *:
-        return self.cefCookie.priority
+        # return CefBasetimeTToDatetime(self.cefCookie.expires)
+        pass
 
 # ------------------------------------------------------------------------------
 # CookieManager
 # ------------------------------------------------------------------------------
 
 class CookieManager(object):
-    """Class used for managing cookies."""
+    """Class used for managing cookies. To instantiate this class
+    call CreateManager() static method."""
 
     @classmethod
     def GetGlobalManager(cls):
@@ -212,6 +213,33 @@ class CookieManager(object):
                     <CefRefPtr[CefCompletionCallback]?>nullptr)
             g_globalCookieManager = CreatePyCookieManager(cefCookieManager)
         return g_globalCookieManager
+
+    # @classmethod
+    # def GetBlockingManager(cls):
+    #     return CreatePyCookieManager(CefCookieManager_GetBlockingManager())
+
+    # @classmethod
+    # def CreateManager(cls, py_string path,
+    #                   py_bool persist_session_cookies=False):
+    #     """
+    #     Create a new cookie manager.
+    #     :param path:
+    #     :type path: str
+    #     :param persist_session_cookies:
+    #     :type path: bool
+    #     :return: CookieManager object
+    #     :rtype: CookieManager
+    #     """
+    #     # When PyCharm generates a stub for the cefpython module
+    #     # it doesn't use the above docstring for code inspections.
+    #     # No idea why.
+    #     cdef CefRefPtr[CefCookieManager] cefCookieManager
+    #     cefCookieManager = CefCookieManager_CreateManager(
+    #             PyToCefStringValue(path), bool(persist_session_cookies),
+    #             <CefRefPtr[CefCompletionCallback]?>nullptr)
+    #     if <void*>cefCookieManager != NULL and cefCookieManager.get():
+    #         return CreatePyCookieManager(cefCookieManager)
+    #     return None
 
 # ------------------------------------------------------------------------------
 # PyCookieManager
@@ -225,6 +253,13 @@ cdef PyCookieManager CreatePyCookieManager(
 
 cdef class PyCookieManager:
     cdef CefRefPtr[CefCookieManager] cefCookieManager
+
+    # cpdef py_void SetSupportedSchemes(self, list schemes):
+    #     cdef cpp_vector[CefString] schemesVector
+    #     for scheme in schemes:
+    #         schemesVector.push_back(PyToCefStringValue(scheme))
+    #     self.cefCookieManager.get().SetSupportedSchemes(schemesVector,
+    #             <CefRefPtr[CefCompletionCallback]?>nullptr)
 
     cdef py_void ValidateUserCookieVisitor(self, object userCookieVisitor):
         if userCookieVisitor and hasattr(userCookieVisitor, "Visit") and (

@@ -4,21 +4,25 @@
 
 """
 Prepares CEF binaries and libraries for work with the build.py tool.
+
 Option 1 is to build CEF from sources with the CEF Python patches applied
 using the --build-cef flag. Building CEF from sources is supported only
 on 64-bit systems. 32-bit is also built on 64-bit using cross-compiling.
 Note that building CEF from sources was last tested with v56 on Linux
 and with v50 on Windows, so if there are issues report them on the Forum.
+
 Option 2 is to use CEF binaries from Spotify Automated Builds using
 the --prebuilt-cef flag. In such case check the cefpython/src/version/
 directory to know which version of CEF to download from Spotify:
-http://opensource.spotify.com/cefbuilds/index.html
+https://cef-builds.spotifycdn.com/index.html
 Download and extract it so that for example you have such a directory:
 cefpython/build/cef_binary_3.2883.1553.g80bd606_windows32/ .
+
 This tool generates CEF binaries and libraries that are ready for work
 with cefpython, with the build.py script. When automate.py tool completes
 job you should see a new subdirectory in the build/ directory, for example:
 cefpython/build/cef55_3.2883.1553.g80bd606_win32/ .
+
 Usage:
     automate.py (--prebuilt-cef | --build-cef | --make-distrib)
                 [--x86 X86]
@@ -35,6 +39,7 @@ Usage:
                 [--proprietary-codecs PROPRIETARY_CODECS]
                 [--no-depot-tools-update NO_DEPOT_TOOLS_UPDATE]
     automate.py (-h | --help) [type -h to show full description for options]
+
 Options:
     -h --help                Show this help message.
     --prebuilt-cef           Whether to use prebuilt CEF binaries. Prebuilt
@@ -73,6 +78,7 @@ Options:
                              building old unsupported versions of Chromium
                              you want to manually checkout an old version
                              of depot tools from the time of the release.
+
 """
 
 from common import *
@@ -319,6 +325,7 @@ def create_cef_directories():
 def update_cef_patches():
     """Update cef/patch/ directory with CEF Python patches.
     Issue73 is applied in getenv() by setting appropriate env var.
+
     Note that this modifies only cef_build_dir/cef/ directory. If the
     build was run previously then there is a copy of the cef/ directory
     in the cef_build_dir/chromium/ directory which is not being updated.
@@ -450,7 +457,6 @@ def build_all_wrapper_libraries_windows():
     if not len(python_compilers):
         print("[automate.py] ERROR: Visual Studio compiler not found")
         sys.exit(1)
-
     for msvs in python_compilers:
         vcvars = python_compilers[msvs]
         print("[automate.py] Build libcef_dll_wrapper libraries for"
@@ -513,6 +519,7 @@ def build_wrapper_library_windows(runtime_library, msvs, vcvars):
         if msvs == "2010":
             # When Using WinSDK 7.1 vcvarsall.bat doesn't work. Use
             # setuptools.msvc.msvc9_query_vcvarsall to query env vars.
+            from setuptools.msvc import msvc9_query_vcvarsall
             env.update(msvc9_query_vcvarsall(10.0, arch=VS_PLATFORM_ARG))
             # On Python 2.7 env values returned by both distutils
             # and setuptools are unicode, but Python expects env
@@ -680,10 +687,8 @@ def prepare_build_command(build_lib=False, vcvars=None):
                 command.append(get_vcvars_for_python())
             command.append(VS_PLATFORM_ARG)
         else:
-            if int(Options.cef_branch) >= 5615:
-                command.append(VS2022_VCVARS)
-            elif int(Options.cef_branch) >= 2704:
-                command.append(VS2019_VCVARS)
+            if int(Options.cef_branch) >= 2704:
+                command.append(VS2015_VCVARS)
             else:
                 command.append(VS2013_VCVARS)
             command.append(VS_PLATFORM_ARG)
@@ -801,7 +806,7 @@ def create_prebuilt_binaries():
         # additional space (cefsimple is 157 MB).
         copy_app(cefclient)
         copy_app(cefsimple)
-        #copy_app(ceftests)
+        copy_app(ceftests)
 
     # END: Copy cefclient, cefsimple, ceftests
 
@@ -862,7 +867,9 @@ def create_prebuilt_binaries():
 
 def get_available_python_compilers():
     all_python_compilers = OrderedDict([
-        ("2022", VS2022_VCVARS),
+        ("2008", VS2008_VCVARS),
+        ("2010", VS2010_VCVARS),
+        ("2015", VS2015_VCVARS),
     ])
     ret_compilers = OrderedDict()
     for msvs in all_python_compilers:
@@ -973,7 +980,7 @@ def run_automate_git():
     """
     Example automate-git.py command:
         C:\chromium>call python automate-git.py --download-dir=./test/
-        --branch=2526 --no-debug-build --verbose-build
+        --branch=2526 --no-debug-build --verbose-build --with-pgo-profiles
     Run ninja build manually:
         cd chromium/src
         ninja -v -j2 -Cout\Release cefclient
@@ -999,6 +1006,7 @@ def run_automate_git():
     if Options.force_chromium_update:
         args.append("--force-update")
     args.append("--no-distrib-archive")
+    args.append("--with-pgo-profiles")
     if platform.system() == "Linux":
         # Building cefclient target isn't supported on Linux when
         # using sysroot (cef/#1916). However building cefclient

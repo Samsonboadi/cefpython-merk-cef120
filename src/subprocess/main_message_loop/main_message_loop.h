@@ -15,6 +15,8 @@
 #include <windows.h>
 #endif
 
+// namespace client {
+
 // Represents the message loop running on the main application thread in the
 // browser process. This will be the same as the CEF UI thread on Linux, OS X
 // and Windows when not using multi-threaded message loop mode. The methods of
@@ -101,5 +103,7 @@ struct DeleteOnMainThread {
     }
   }
 };
+
+// }  // namespace client
 
 #endif  // CEF_TESTS_SHARED_BROWSER_MAIN_MESSAGE_LOOP_H_

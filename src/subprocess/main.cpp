@@ -18,9 +18,9 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
 	// lpCmdLine does not include program name argument, must
 	// use GetCommandLineW(). Cannot use CefCommandLine::GetGlobalCommandLine,
 	// as CEF was not yet initialized.
-	//CefRefPtr<CefCommandLine> command_line = \
-	//        CefCommandLine::CreateCommandLine();
-    //command_line->InitFromString(GetCommandLineW());
+	CefRefPtr<CefCommandLine> command_line = \
+	        CefCommandLine::CreateCommandLine();
+    command_line->InitFromString(GetCommandLineW());
 
 	CefMainArgs mainArgs(hInstance);
 

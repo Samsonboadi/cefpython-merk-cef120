@@ -3,6 +3,7 @@
 # Project website: https://github.com/cztomczak/cefpython
 
 include "cefpython.pyx"
+from libc.stdint cimport int64_t
 import weakref
 
 cdef object g_pyWebRequests = weakref.WeakValueDictionary()
@@ -176,7 +177,7 @@ cdef public void WebRequestClient_OnDownloadData(
             if userCallback:
                 userCallback(
                         web_request=webRequest,
-                        data=VoidPtrToString(data, dataLength))
+                        data=VoidPtrToBytes(data, dataLength))
     except:
         (exc_type, exc_value, exc_trace) = sys.exc_info()
         sys.excepthook(exc_type, exc_value, exc_trace)

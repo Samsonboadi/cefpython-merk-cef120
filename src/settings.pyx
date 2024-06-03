@@ -9,6 +9,7 @@
 include "cefpython.pyx"
 
 cimport cef_types
+from libc.stdint cimport uint32_t
 
 LOGSEVERITY_DEFAULT = cef_types.LOGSEVERITY_DEFAULT
 LOGSEVERITY_VERBOSE = cef_types.LOGSEVERITY_VERBOSE
@@ -22,7 +23,6 @@ LOGSEVERITY_WARNING = cef_types.LOGSEVERITY_WARNING
 LOGSEVERITY_ERROR = cef_types.LOGSEVERITY_ERROR
 # keep for BC
 LOGSEVERITY_ERROR_REPORT = cef_types.LOGSEVERITY_ERROR
-LOGSEVERITY_FATAL = cef_types.LOGSEVERITY_FATAL
 LOGSEVERITY_DISABLE = cef_types.LOGSEVERITY_DISABLE
 
 
@@ -46,24 +46,12 @@ cdef void SetApplicationSettings(
                 or key == "app_user_model_id":
             # CEF Python only options. These are not to be found in CEF.
             continue
-        elif key == "accept_language_list":
-            cefString = new CefString(&cefAppSettings.accept_language_list)
-            PyToCefStringPointer(appSettings[key], cefString)
-            del cefString
+        # elif key == "accept_language_list":
+        #     cefString = new CefString(&cefAppSettings.accept_language_list)
+        #     PyToCefStringPointer(appSettings[key], cefString)
+        #     del cefString
         elif key == "cache_path":
             cefString = new CefString(&cefAppSettings.cache_path)
-            PyToCefStringPointer(appSettings[key], cefString)
-            del cefString
-        elif key == "cookieable_schemes_list":
-            cefString = new CefString(&cefAppSettings.cookieable_schemes_list)
-            PyToCefStringPointer(appSettings[key], cefString)
-            del cefString
-        elif key == "cookieable_schemes_exclude_defaults":
-            cefAppSettings.cookieable_schemes_exclude_defaults = int(appSettings[key])
-        elif key == "chrome_runtime":
-            cefAppSettings.chrome_runtime = int(appSettings[key])
-        elif key == "root_cache_path":
-            cefString = new CefString(&cefAppSettings.root_cache_path)
             PyToCefStringPointer(appSettings[key], cefString)
             del cefString
         elif key == "persist_session_cookies":
@@ -72,10 +60,10 @@ cdef void SetApplicationSettings(
             cefString = new CefString(&cefAppSettings.user_agent)
             PyToCefStringPointer(appSettings[key], cefString)
             del cefString
-        elif key == "user_agent_product":
-            cefString = new CefString(&cefAppSettings.user_agent_product)
-            PyToCefStringPointer(appSettings[key], cefString)
-            del cefString
+        # elif key == "product_version":
+        #     cefString = new CefString(&cefAppSettings.product_version)
+        #     PyToCefStringPointer(appSettings[key], cefString)
+        #     del cefString
         elif key == "log_file":
             cefString = new CefString(&cefAppSettings.log_file)
             PyToCefStringPointer(appSettings[key], cefString)
@@ -88,6 +76,9 @@ cdef void SetApplicationSettings(
             cefAppSettings.log_severity = <cef_types.cef_log_severity_t><int>int(appSettings[key])
         elif key == "multi_threaded_message_loop":
             cefAppSettings.multi_threaded_message_loop = int(appSettings[key])
+        # elif key == "net_security_expiration_enabled":
+        #     cefAppSettings.enable_net_security_expiration =\
+        #             int(appSettings[key])
         elif key == "release_dcheck_enabled":
             # Keep for BC, just log info - no error
             Debug("DEPRECATED: 'release_dcheck_enabled' setting")
@@ -115,12 +106,18 @@ cdef void SetApplicationSettings(
             cefAppSettings.command_line_args_disabled = int(appSettings[key])
         elif key == "remote_debugging_port":
             cefAppSettings.remote_debugging_port = int(appSettings[key])
+        # elif key == "ignore_certificate_errors":
+        #     cefAppSettings.ignore_certificate_errors = int(appSettings[key])
         elif key == "background_color":
             cefAppSettings.background_color = \
-                    <cef_types.uint32_t>int(appSettings[key])
+                    <uint32_t>int(appSettings[key])
         elif key == "persist_user_preferences":
             cefAppSettings.persist_user_preferences = \
                     int(appSettings[key])
+        # elif key == "user_data_path":
+        #     cefString = new CefString(&cefAppSettings.user_data_path)
+        #     PyToCefStringPointer(appSettings[key], cefString)
+        #     del cefString
         elif key == "windowless_rendering_enabled":
             cefAppSettings.windowless_rendering_enabled = \
                     int(appSettings[key])
@@ -129,10 +126,6 @@ cdef void SetApplicationSettings(
                     int(appSettings[key])
         elif key == "framework_dir_path":
             cefString = new CefString(&cefAppSettings.framework_dir_path)
-            PyToCefStringPointer(appSettings[key], cefString)
-            del cefString
-        elif key == "main_bundle_path":
-            cefString = new CefString(&cefAppSettings.main_bundle_path)
             PyToCefStringPointer(appSettings[key], cefString)
             del cefString
         else:
@@ -148,9 +141,13 @@ cdef void SetBrowserSettings(
         if key == "inherit_client_handlers_for_popups":
             # CEF Python only options. These are not to be found in CEF.
             continue
+        # elif key == "accept_language_list":
+        #     cefString = new CefString(&cefBrowserSettings.accept_language_list)
+        #     PyToCefStringPointer(browserSettings[key], cefString)
+        #     del cefString
         elif key == "background_color":
             cefBrowserSettings.background_color = \
-                    <cef_types.uint32_t>int(browserSettings[key])
+                    <uint32_t>int(browserSettings[key])
         elif key == "standard_font_family":
             cefString = new CefString(&cefBrowserSettings.standard_font_family)
             PyToCefStringPointer(browserSettings[key], cefString)
@@ -229,6 +226,30 @@ cdef void SetBrowserSettings(
         elif key == "java_disabled":
             # Keep the key for BC
             Debug("DEPRECATED: 'java_disabled' setting")
+        # elif key == "plugins_disabled":
+        #     if browserSettings[key]:
+        #         cefBrowserSettings.plugins = cef_types.STATE_DISABLED
+        #     else:
+        #         cefBrowserSettings.plugins = cef_types.STATE_ENABLED
+        # elif key == "universal_access_from_file_urls_allowed":
+        #     if browserSettings[key]:
+        #         cefBrowserSettings.universal_access_from_file_urls = (
+        #                 cef_types.STATE_ENABLED)
+        #     else:
+        #         cefBrowserSettings.universal_access_from_file_urls = (
+        #                 cef_types.STATE_DISABLED)
+        # elif key == "file_access_from_file_urls_allowed":
+        #     if browserSettings[key]:
+        #         cefBrowserSettings.file_access_from_file_urls = (
+        #                 cef_types.STATE_ENABLED)
+        #     else:
+        #         cefBrowserSettings.file_access_from_file_urls = (
+        #                 cef_types.STATE_DISABLED)
+        # elif key == "web_security_disabled":
+        #     if browserSettings[key]:
+        #         cefBrowserSettings.web_security = cef_types.STATE_DISABLED
+        #     else:
+        #         cefBrowserSettings.web_security = cef_types.STATE_ENABLED
         elif key == "image_load_disabled":
             if browserSettings[key]:
                 cefBrowserSettings.image_loading = cef_types.STATE_DISABLED
@@ -265,6 +286,13 @@ cdef void SetBrowserSettings(
                 cefBrowserSettings.databases = cef_types.STATE_DISABLED
             else:
                 cefBrowserSettings.databases = cef_types.STATE_ENABLED
+        # elif key == "application_cache_disabled":
+        #     if browserSettings[key]:
+        #         cefBrowserSettings.application_cache = (
+        #                 cef_types.STATE_DISABLED)
+        #     else:
+        #         cefBrowserSettings.application_cache = (
+        #                 cef_types.STATE_ENABLED)
         elif key == "webgl_disabled":
             if browserSettings[key]:
                 cefBrowserSettings.webgl = cef_types.STATE_DISABLED

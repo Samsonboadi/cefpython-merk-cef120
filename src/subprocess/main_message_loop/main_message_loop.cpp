@@ -7,7 +7,11 @@
 #include "include/cef_task.h"
 #include "include/wrapper/cef_closure_task.h"
 
+namespace {
+
 MainMessageLoop* g_main_message_loop = nullptr;
+
+}  // namespace
 
 MainMessageLoop::MainMessageLoop() {
   DCHECK(!g_main_message_loop);

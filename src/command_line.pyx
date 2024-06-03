@@ -10,6 +10,7 @@ cdef void AppendSwitchesToCommandLine(
         ) except * with gil:
     # Called from:
     # 1. App_OnBeforeCommandLineProcessing_BrowserProcess()
+    # 2. BrowserProcessHandler_OnRenderProcessThreadCreated()
     cdef PyCommandLine pyCommandLine = CreatePyCommandLine(cefCommandLine)
     cdef py_string switch
     cdef py_string value

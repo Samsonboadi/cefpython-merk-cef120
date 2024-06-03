@@ -46,11 +46,6 @@ public:
                  const void* buffer,
                  int width, int height) override;
 
-    void OnAcceleratedPaint(CefRefPtr<CefBrowser> browser,
-                            PaintElementType type,
-                            const RectList& dirtyRects,
-                            void* shared_handle) override;
-
     void OnScrollOffsetChanged(CefRefPtr<CefBrowser> browser,
                                double x,
                                double y) override;

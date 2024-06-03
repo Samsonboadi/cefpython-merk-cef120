@@ -433,10 +433,14 @@ typedef struct _cef_settings_t {
   ///
   /// Set to a value between 1024 and 65535 to enable remote debugging on the
   /// specified port. Also configurable using the "remote-debugging-port"
-  /// command-line switch. Remote debugging can be accessed by loading the
-  /// chrome://inspect page in Google Chrome. Port numbers 9222 and 9229 are
-  /// discoverable by default. Other port numbers may need to be configured via
-  /// "Discover network targets" on the Devices tab.
+  /// command-line switch. Specifying 0 via the command-line switch will result
+  /// in the selection of an ephemeral port and the port number will be printed
+  /// as part of the WebSocket endpoint URL to stderr. If a cache directory path
+  /// is provided the port will also be written to the
+  /// <cache-dir>/DevToolsActivePort file. Remote debugging can be accessed by
+  /// loading the chrome://inspect page in Google Chrome. Port numbers 9222 and
+  /// 9229 are discoverable by default. Other port numbers may need to be
+  /// configured via "Discover network targets" on the Devices tab.
   ///
   int remote_debugging_port;
 
@@ -2332,6 +2336,7 @@ typedef enum {
   DOM_FORM_CONTROL_TYPE_BUTTON_SUBMIT,
   DOM_FORM_CONTROL_TYPE_BUTTON_RESET,
   DOM_FORM_CONTROL_TYPE_BUTTON_SELECT_LIST,
+  DOM_FORM_CONTROL_TYPE_BUTTON_POPOVER,
   DOM_FORM_CONTROL_TYPE_FIELDSET,
   DOM_FORM_CONTROL_TYPE_INPUT_BUTTON,
   DOM_FORM_CONTROL_TYPE_INPUT_CHECKBOX,
@@ -2708,6 +2713,11 @@ typedef struct _cef_pdf_print_settings_t {
   /// Set to true (1) to generate tagged (accessible) PDF.
   ///
   int generate_tagged_pdf;
+
+  ///
+  /// Set to true (1) to generate a document outline.
+  ///
+  int generate_document_outline;
 } cef_pdf_print_settings_t;
 
 ///
@@ -3416,7 +3426,8 @@ typedef enum {
   CEF_CPAIT_SAVE_IBAN,
   CEF_CPAIT_MANDATORY_REAUTH,
   CEF_CPAIT_PRICE_INSIGHTS,
-  CEF_CPAIT_MAX_VALUE = CEF_CPAIT_PRICE_INSIGHTS,
+  CEF_CPAIT_PRICE_READ_ANYTHING,
+  CEF_CPAIT_MAX_VALUE = CEF_CPAIT_PRICE_READ_ANYTHING,
 } cef_chrome_page_action_icon_type_t;
 
 ///
@@ -3446,10 +3457,21 @@ typedef enum {
 /// Show states supported by CefWindowDelegate::GetInitialShowState.
 ///
 typedef enum {
+  // Show the window as normal.
   CEF_SHOW_STATE_NORMAL = 1,
+
+  // Show the window as minimized.
   CEF_SHOW_STATE_MINIMIZED,
+
+  // Show the window as maximized.
   CEF_SHOW_STATE_MAXIMIZED,
+
+  // Show the window as fullscreen.
   CEF_SHOW_STATE_FULLSCREEN,
+
+  // Show the window as hidden (no dock thumbnail).
+  // Only supported on MacOS.
+  CEF_SHOW_STATE_HIDDEN,
 } cef_show_state_t;
 
 ///
@@ -3539,23 +3561,24 @@ typedef enum {
   CEF_PERMISSION_TYPE_AR_SESSION = 1 << 1,
   CEF_PERMISSION_TYPE_CAMERA_PAN_TILT_ZOOM = 1 << 2,
   CEF_PERMISSION_TYPE_CAMERA_STREAM = 1 << 3,
-  CEF_PERMISSION_TYPE_CLIPBOARD = 1 << 4,
-  CEF_PERMISSION_TYPE_TOP_LEVEL_STORAGE_ACCESS = 1 << 5,
-  CEF_PERMISSION_TYPE_DISK_QUOTA = 1 << 6,
-  CEF_PERMISSION_TYPE_LOCAL_FONTS = 1 << 7,
-  CEF_PERMISSION_TYPE_GEOLOCATION = 1 << 8,
-  CEF_PERMISSION_TYPE_IDLE_DETECTION = 1 << 9,
-  CEF_PERMISSION_TYPE_MIC_STREAM = 1 << 10,
-  CEF_PERMISSION_TYPE_MIDI = 1 << 11,
-  CEF_PERMISSION_TYPE_MIDI_SYSEX = 1 << 12,
-  CEF_PERMISSION_TYPE_MULTIPLE_DOWNLOADS = 1 << 13,
-  CEF_PERMISSION_TYPE_NOTIFICATIONS = 1 << 14,
-  CEF_PERMISSION_TYPE_PROTECTED_MEDIA_IDENTIFIER = 1 << 15,
-  CEF_PERMISSION_TYPE_REGISTER_PROTOCOL_HANDLER = 1 << 16,
-  CEF_PERMISSION_TYPE_STORAGE_ACCESS = 1 << 17,
-  CEF_PERMISSION_TYPE_VR_SESSION = 1 << 18,
-  CEF_PERMISSION_TYPE_WINDOW_MANAGEMENT = 1 << 19,
-  CEF_PERMISSION_TYPE_FILE_SYSTEM_ACCESS = 1 << 20,
+  CEF_PERMISSION_TYPE_CAPTURED_SURFACE_CONTROL = 1 << 4,
+  CEF_PERMISSION_TYPE_CLIPBOARD = 1 << 5,
+  CEF_PERMISSION_TYPE_TOP_LEVEL_STORAGE_ACCESS = 1 << 6,
+  CEF_PERMISSION_TYPE_DISK_QUOTA = 1 << 7,
+  CEF_PERMISSION_TYPE_LOCAL_FONTS = 1 << 8,
+  CEF_PERMISSION_TYPE_GEOLOCATION = 1 << 9,
+  CEF_PERMISSION_TYPE_IDLE_DETECTION = 1 << 10,
+  CEF_PERMISSION_TYPE_MIC_STREAM = 1 << 11,
+  CEF_PERMISSION_TYPE_MIDI = 1 << 12,
+  CEF_PERMISSION_TYPE_MIDI_SYSEX = 1 << 13,
+  CEF_PERMISSION_TYPE_MULTIPLE_DOWNLOADS = 1 << 14,
+  CEF_PERMISSION_TYPE_NOTIFICATIONS = 1 << 15,
+  CEF_PERMISSION_TYPE_PROTECTED_MEDIA_IDENTIFIER = 1 << 16,
+  CEF_PERMISSION_TYPE_REGISTER_PROTOCOL_HANDLER = 1 << 17,
+  CEF_PERMISSION_TYPE_STORAGE_ACCESS = 1 << 18,
+  CEF_PERMISSION_TYPE_VR_SESSION = 1 << 19,
+  CEF_PERMISSION_TYPE_WINDOW_MANAGEMENT = 1 << 20,
+  CEF_PERMISSION_TYPE_FILE_SYSTEM_ACCESS = 1 << 21,
 } cef_permission_request_types_t;
 
 ///

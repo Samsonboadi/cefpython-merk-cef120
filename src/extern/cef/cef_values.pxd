@@ -9,6 +9,7 @@ from libcpp.vector cimport vector
 from cef_types cimport cef_value_type_t
 
 cdef extern from "include/cef_values.h":
+    @staticmethod
     cdef CefRefPtr[CefBinaryValue] CefBinaryValue_Create \
         "CefBinaryValue::Create"(const void* data, size_t data_size)
 
@@ -31,7 +32,8 @@ cdef extern from "include/cef_values.h":
         CefRefPtr[CefBinaryValue] Copy()
         size_t GetSize()
         size_t GetData(void* buffer_, size_t buffer_size, size_t data_offset)
-        
+    
+    @staticmethod    
     cdef CefRefPtr[CefDictionaryValue] CefDictionaryValue_Create \
         "CefDictionaryValue::Create"()
 
@@ -72,20 +74,20 @@ cdef extern from "include/cef_values.h":
         cpp_bool SetSize(size_t size)
         size_t GetSize()
         cpp_bool Clear()
-        cpp_bool Remove(int index)
-        cef_value_type_t GetType(int index)
-        cpp_bool GetBool(int index)
-        int GetInt(int index)
-        double GetDouble(int index)
-        CefString GetString(int index)
-        CefRefPtr[CefBinaryValue] GetBinary(int index)
-        CefRefPtr[CefDictionaryValue] GetDictionary(int index)
-        CefRefPtr[CefListValue] GetList(int index)
-        cpp_bool SetNull(int index)
-        cpp_bool SetBool(int index, cpp_bool value)
-        cpp_bool SetInt(int index, int value)
-        cpp_bool SetDouble(int index, double value)
-        cpp_bool SetString(int index, const CefString& value)
-        cpp_bool SetBinary(int index, CefRefPtr[CefBinaryValue] value)
-        cpp_bool SetDictionary(int index, CefRefPtr[CefDictionaryValue] value)
-        cpp_bool SetList(int index, CefRefPtr[CefListValue] value)
+        cpp_bool Remove(size_t index)
+        cef_value_type_t GetType(size_t index)
+        cpp_bool GetBool(size_t index)
+        int GetInt(size_t index)
+        double GetDouble(size_t index)
+        CefString GetString(size_t index)
+        CefRefPtr[CefBinaryValue] GetBinary(size_t index)
+        CefRefPtr[CefDictionaryValue] GetDictionary(size_t index)
+        CefRefPtr[CefListValue] GetList(size_t index)
+        cpp_bool SetNull(size_t index)
+        cpp_bool SetBool(size_t index, cpp_bool value)
+        cpp_bool SetInt(size_t index, int value)
+        cpp_bool SetDouble(size_t index, double value)
+        cpp_bool SetString(size_t index, const CefString& value)
+        cpp_bool SetBinary(size_t index, CefRefPtr[CefBinaryValue] value)
+        cpp_bool SetDictionary(size_t index, CefRefPtr[CefDictionaryValue] value)
+        cpp_bool SetList(size_t index, CefRefPtr[CefListValue] value)

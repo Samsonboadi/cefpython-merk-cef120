@@ -82,7 +82,6 @@ additional usage information.
 | window_info_out | list[[WindowInfo](WindowInfo.md)] |
 | client | None |
 | browser_settings_out | list[[BrowserSettings](BrowserSettings.md)] |
-| extra_info | CefDictionaryValue |
 | no_javascript_access_out | list[bool] |
 | __Return__ | bool |
 
@@ -108,18 +107,22 @@ Description from upstream CEF:
 > browser is destroyed before the popup browser creation completes (indicated
 > by a call to OnAfterCreated for the popup browser).
 
+`WindowOpenDisposition` constants in the cefpython module:
+* CEF_WOD_UNKNOWN,
+* CEF_WOD_CURRENT_TAB,
+* CEF_WOD_SINGLETON_TAB,
+* CEF_WOD_NEW_FOREGROUND_TAB,
+* CEF_WOD_NEW_BACKGROUND_TAB,
+* CEF_WOD_NEW_POPUP,
+* CEF_WOD_NEW_WINDOW,
+* CEF_WOD_SAVE_TO_DISK,
+* CEF_WOD_OFF_THE_RECORD,
+* CEF_WOD_IGNORE_ACTION
+
 Note that if you return True and create the popup window yourself, then
 the popup window and parent window will not be able to script each other.
 There will be no "window.opener" property available in the popup window.
-
-`WindowOpenDisposition` constants in the cefpython module:
-* WOD_UNKNOWN,
-* WOD_CURRENT_TAB,
-* WOD_SINGLETON_TAB,
-* WOD_NEW_FOREGROUND_TAB,
-* WOD_NEW_BACKGROUND_TAB,
-* WOD_NEW_POPUP,
-* WOD_NEW_WINDOW,
-* WOD_SAVE_TO_DISK,
-* WOD_OFF_THE_RECORD,
-* WOD_IGNORE_ACTION
+To avoid this issue create a hidden window when your application starts.
+Parent the new popup browser to the hidden window in OnBeforePopup. After
+the browser exists (OnAfterCreated) create the desired target window
+and re-parent the browser to that target window.

@@ -4,7 +4,7 @@
 
 #include "common/cefpython_public_api.h"
 #include "include/cef_request_handler.h"
-#include "include/cef_resource_request_handler.h"
+#include "include/base/cef_callback.h"
 
 typedef cef_return_value_t ReturnValue;
 
@@ -21,14 +21,40 @@ public:
                         bool user_gesture,
                         bool is_redirect) override;
 
+    ReturnValue OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser,
+                                     CefRefPtr<CefFrame> frame,
+                                     CefRefPtr<CefRequest> request,
+                                     CefRefPtr<CefCallback> callback
+                                     ) ;
+
+    CefRefPtr<CefResourceHandler> GetResourceHandler(
+                                      CefRefPtr<CefBrowser> browser,
+                                      CefRefPtr<CefFrame> frame,
+                                      CefRefPtr<CefRequest> request) ;
+
+    void OnResourceRedirect(CefRefPtr<CefBrowser> browser,
+                            CefRefPtr<CefFrame> frame,
+                            CefRefPtr<CefRequest> request,
+                            CefRefPtr<CefResponse> response,
+                            CefString& new_url) ;
+
     bool GetAuthCredentials(CefRefPtr<CefBrowser> browser,
-                            const CefString& origin_url,
+                            CefRefPtr<CefFrame> frame,
                             bool isProxy,
                             const CefString& host,
                             int port,
                             const CefString& realm,
                             const CefString& scheme,
-                            CefRefPtr<CefAuthCallback> callback) override;
+                            CefRefPtr<CefAuthCallback> callback) ;
+
+    bool OnQuotaRequest(CefRefPtr<CefBrowser> browser,
+                        const CefString& origin_url,
+                        int64_t new_size,
+                        CefRefPtr<CefCallback> callback) ;
+
+    void OnProtocolExecution(CefRefPtr<CefBrowser> browser,
+                             const CefString& url,
+                             bool& allow_os_execution) ;
 
     bool OnCertificateError(CefRefPtr<CefBrowser> browser,
                             cef_errorcode_t cert_error,
@@ -39,39 +65,18 @@ public:
     void OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser,
                                    cef_termination_status_t status) override;
 
+    void OnPluginCrashed(CefRefPtr<CefBrowser> browser,
+                         const CefString& plugin_path) ;
+
+    bool CanGetCookies(CefRefPtr<CefBrowser> browser,
+                       CefRefPtr<CefFrame> frame,
+                       CefRefPtr<CefRequest> request) ;
+
+    bool CanSetCookie(CefRefPtr<CefBrowser> browser,
+                      CefRefPtr<CefFrame> frame,
+                      CefRefPtr<CefRequest> request,
+                      const CefCookie& cookie) ;
+
 private:
     IMPLEMENT_REFCOUNTING(RequestHandler);
-};
-
-
-class ResourceRequestHandler : public CefResourceRequestHandler
-{
-public:
-    ResourceRequestHandler(){}
-    virtual ~ResourceRequestHandler(){}
-
-    ReturnValue OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser,
-                                     CefRefPtr<CefFrame> frame,
-                                     CefRefPtr<CefRequest> request,
-                                     CefRefPtr<CefCallback> callback
-                                     ) override;
-
-    CefRefPtr<CefResourceHandler> GetResourceHandler(
-                                      CefRefPtr<CefBrowser> browser,
-                                      CefRefPtr<CefFrame> frame,
-                                      CefRefPtr<CefRequest> request) override;
-
-    void OnResourceRedirect(CefRefPtr<CefBrowser> browser,
-                            CefRefPtr<CefFrame> frame,
-                            CefRefPtr<CefRequest> request,
-                            CefRefPtr<CefResponse> response,
-                            CefString& new_url) override;
-
-    void OnProtocolExecution(CefRefPtr<CefBrowser> browser,
-                             CefRefPtr<CefFrame> frame,
-                             CefRefPtr<CefRequest> request,
-                             bool& allow_os_execution) override;
-
-private:
-    IMPLEMENT_REFCOUNTING(ResourceRequestHandler);
 };

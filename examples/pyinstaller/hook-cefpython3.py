@@ -14,8 +14,13 @@ import re
 import sys
 import PyInstaller
 from PyInstaller.utils.hooks import is_module_satisfies, get_package_paths
-from PyInstaller.compat import is_win, is_darwin, is_linux, is_py2
+from PyInstaller.compat import is_win, is_darwin, is_linux
 from PyInstaller import log as logging
+try:
+    # PyInstaller >= 4.0 doesn't support Python 2.7
+    from PyInstaller.compat import is_py2
+except ImportError:
+    is_py2 = None
 
 # Constants
 CEFPYTHON_MIN_VERSION = "57.0"
@@ -66,7 +71,7 @@ def get_cefpython_modules():
     'cefpython_py27'. """
     pyds = glob.glob(os.path.join(CEFPYTHON3_DIR,
                                   "cefpython_py*" + CYTHON_MODULE_EXT))
-    assert len(pyds) > 1, "Missing cefpython3 Cython modules"
+    assert len(pyds) >= 1, "Missing cefpython3 Cython modules"
     modules = []
     for path in pyds:
         filename = os.path.basename(path)

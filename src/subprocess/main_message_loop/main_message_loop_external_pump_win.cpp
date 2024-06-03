@@ -1,3 +1,6 @@
+// Copied from upstream cefclient with minor modifications.
+// Windows UNICODE API calls were converted to ANSI or commented out.
+
 // Copyright (c) 2016 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
@@ -6,10 +9,11 @@
 
 #include <CommCtrl.h>
 
-#include <memory>
-
+#include "include/base/cef_ptr_util.h"
 #include "include/cef_app.h"
 #include "util_win.h"
+
+namespace {
 
 // Message sent to get an additional time slice for pumping (processing) another
 // task (a series of such messages creates a continuous task pump).
@@ -34,9 +38,7 @@ class MainMessageLoopExternalPumpWin : public MainMessageLoopExternalPump {
   bool IsTimerPending() override { return timer_pending_; }
 
  private:
-  static LRESULT CALLBACK WndProc(HWND hwnd,
-                                  UINT msg,
-                                  WPARAM wparam,
+  static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wparam,
                                   LPARAM lparam);
 
   // True if a timer event is currently pending.
@@ -47,7 +49,8 @@ class MainMessageLoopExternalPumpWin : public MainMessageLoopExternalPump {
 };
 
 MainMessageLoopExternalPumpWin::MainMessageLoopExternalPumpWin()
-    : timer_pending_(false), main_thread_target_(nullptr) {
+  : timer_pending_(false),
+    main_thread_target_(nullptr) {
   HINSTANCE hInstance = GetModuleHandle(nullptr);
   const char* const kClassName = "CEFMainTargetHWND";
 
@@ -59,9 +62,8 @@ MainMessageLoopExternalPumpWin::MainMessageLoopExternalPumpWin()
   RegisterClassEx(&wcex);
 
   // Create the message handling window.
-  main_thread_target_ =
-      CreateWindowA(kClassName, nullptr, WS_OVERLAPPEDWINDOW, 0, 0, 0, 0,
-                    HWND_MESSAGE, nullptr, hInstance, nullptr);
+  main_thread_target_ = CreateWindowA(kClassName, nullptr, WS_OVERLAPPEDWINDOW,
+      0, 0, 0, 0, HWND_MESSAGE , nullptr, hInstance, nullptr);
   DCHECK(main_thread_target_);
   SetUserDataPtr(main_thread_target_, this);
 }
@@ -91,11 +93,11 @@ int MainMessageLoopExternalPumpWin::Run() {
   for (int i = 0; i < 10; ++i) {
     // Do some work.
     CefDoMessageLoopWork();
-
+    
     // Sleep to allow the CEF proc to do work.
     Sleep(50);
   }
-
+  
   return 0;
 }
 
@@ -120,10 +122,8 @@ void MainMessageLoopExternalPumpWin::KillTimer() {
 }
 
 // static
-LRESULT CALLBACK MainMessageLoopExternalPumpWin::WndProc(HWND hwnd,
-                                                         UINT msg,
-                                                         WPARAM wparam,
-                                                         LPARAM lparam) {
+LRESULT CALLBACK MainMessageLoopExternalPumpWin::WndProc(
+    HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
   if (msg == WM_TIMER || msg == kMsgHaveWork) {
     MainMessageLoopExternalPumpWin* message_loop =
         GetUserDataPtr<MainMessageLoopExternalPumpWin*>(hwnd);
@@ -139,10 +139,10 @@ LRESULT CALLBACK MainMessageLoopExternalPumpWin::WndProc(HWND hwnd,
   return DefWindowProc(hwnd, msg, wparam, lparam);
 }
 
-
+} // namespace
 
 // static
 std::unique_ptr<MainMessageLoopExternalPump>
 MainMessageLoopExternalPump::Create() {
-  return std::make_unique<MainMessageLoopExternalPumpWin>();
+  return base::WrapUnique(new MainMessageLoopExternalPumpWin());
 }

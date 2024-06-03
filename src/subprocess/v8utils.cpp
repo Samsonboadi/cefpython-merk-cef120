@@ -329,7 +329,8 @@ CefRefPtr<CefV8Value> CefDictionaryValueToV8Value(
     CefRefPtr<CefBinaryValue> binaryValue;
     PythonCallback pyCallback;
     CefRefPtr<CefV8Handler> v8FunctionHandler;
-    for (auto it = keys.begin(); it != keys.end(); ++it) {
+    for (std::vector<CefString>::iterator it = keys.begin(); \
+            it != keys.end(); ++it) {
         CefString key = *it;
         cef_value_type_t valueType = dictValue->GetType(key);
         bool success;

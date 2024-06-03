@@ -5,6 +5,8 @@
 include "cefpython.pyx"
 
 cimport cef_types
+from libc.stdint cimport uint32_t, int64_t
+from libcpp cimport nullptr
 from cef_types cimport cef_state_t
 IF UNAME_SYSNAME == "Linux":
     cimport x11
@@ -59,7 +61,7 @@ cdef PyBrowser GetPyBrowser(CefRefPtr[CefBrowser] cefBrowser,
 
     global g_pyBrowsers
 
-    if not cefBrowser.get():
+    if not cefBrowser or not cefBrowser.get():
         raise Exception("{caller}: CefBrowser reference is NULL"
                         .format(caller=callerIdStr))
 
@@ -144,12 +146,11 @@ cdef void RemovePyBrowser(int browserId) except *:
     # Called from LifespanHandler_OnBeforeClose().
     global g_pyBrowsers, g_unreferenced_browsers
     cdef PyBrowser pyBrowser
-    
     if browserId in g_pyBrowsers:
         # noinspection PyUnresolvedReferences
         Debug("del g_pyBrowsers[%s]" % browserId)
         pyBrowser = g_pyBrowsers[browserId]
-        pyBrowser.cefBrowser.swap(<CefRefPtr[CefBrowser]?>nullptr)
+        pyBrowser.cefBrowser.Assign(nullptr)
         del pyBrowser
         del g_pyBrowsers[browserId]
         g_unreferenced_browsers.append(browserId)
@@ -208,7 +209,7 @@ cdef class PyBrowser:
     cdef void* imageBuffer
 
     cdef CefRefPtr[CefBrowser] GetCefBrowser(self) except *:
-        if self.cefBrowser.get():
+        if self.cefBrowser and self.cefBrowser.get():
             return self.cefBrowser
         raise Exception("PyBrowser.GetCefBrowser() failed: CefBrowser "
                         "was destroyed")
@@ -216,7 +217,7 @@ cdef class PyBrowser:
     cdef CefRefPtr[CefBrowserHost] GetCefBrowserHost(self) except *:
         cdef CefRefPtr[CefBrowserHost] cefBrowserHost = (
                 self.GetCefBrowser().get().GetHost())
-        if cefBrowserHost.get():
+        if cefBrowserHost and cefBrowserHost.get():
             return cefBrowserHost
         raise Exception("PyBrowser.GetCefBrowserHost() failed: this "
                         "method can only be called in the browser "
@@ -237,17 +238,19 @@ cdef class PyBrowser:
             self.allowedClientCallbacks += [
                     "OnAddressChange", "OnTitleChange", "OnTooltip",
                     "OnStatusMessage", "OnConsoleMessage", "OnAutoResize",
-                    "OnLoadingProgressChange", "OnCursorChange"]
+                    "OnLoadingProgressChange"]
             # KeyboardHandler
             self.allowedClientCallbacks += ["OnPreKeyEvent", "OnKeyEvent"]
             # RequestHandler
-            # NOTE: OnCertificateError is not included as it must be set 
-            #       using cefpython.SetGlobalClientCallback().
+            # NOTE: OnCertificateError and OnBeforePluginLoad are not
+            #       included as they must be set using
+            #       cefpython.SetGlobalClientCallback().
             self.allowedClientCallbacks += ["OnBeforeResourceLoad",
                     "OnResourceRedirect", "GetAuthCredentials",
-                    "OnProtocolExecution", "GetResourceHandler",
+                    "OnQuotaRequest", "OnProtocolExecution",
+                    "GetResourceHandler",
                     "OnBeforeBrowse", "OnRendererProcessTerminated",
-                    "CanGetCookies", "CanSetCookie"]
+                    "OnPluginCrashed", "CanGetCookies", "CanSetCookie"]
             # RequestContextHandler
             self.allowedClientCallbacks += ["GetCookieManager"]
             # LoadHandler
@@ -262,10 +265,13 @@ cdef class PyBrowser:
             self.allowedClientCallbacks += ["GetRootScreenRect",
                     "GetViewRect", "GetScreenPoint", "GetScreenInfo",
                     "GetScreenRect",
-                    "OnPopupShow", "OnPopupSize", "OnPaint",
-                    "OnAcceleratedPaint", "OnScrollOffsetChanged",
+                    "OnPopupShow", "OnPopupSize", "OnPaint", "OnCursorChange",
+                    "OnScrollOffsetChanged",
                     "StartDragging", "UpdateDragCursor",
                     "OnTextSelectionChanged"]
+            # V8ContextHandler
+            self.allowedClientCallbacks += ["OnContextCreated",
+                    "OnContextReleased"]
             # JavascriptDialogHandler
             self.allowedClientCallbacks += ["OnJavascriptDialog",
                     "OnBeforeUnloadJavascriptDialog",
@@ -274,17 +280,6 @@ cdef class PyBrowser:
             # FocusHandler
             self.allowedClientCallbacks += ["OnTakeFocus", "OnSetFocus",
                                             "OnGotFocus"]
-
-            # DevToolsHandler
-            self.allowedClientCallbacks += ["ShowDevTools"]
-
-            # Printing
-            self.allowedClientCallbacks += ["OnFileDialog",  "OnPdfPrintFinished"]
-            
-            # Download
-            self.allowedClientCallbacks += ["CanDownload", 
-                                            "OnBeforeDownload",
-                                            "OnDownloadUpdated"]
 
         if name not in self.allowedClientCallbacks:
             raise Exception("Browser.SetClientCallback() failed: unknown "
@@ -368,9 +363,6 @@ cdef class PyBrowser:
         PyToCefString(word, cef_word)
         self.GetCefBrowserHost().get().AddWordToDictionary(cef_word)
 
-    cpdef py_bool IsValid(self):
-        return self.GetCefBrowser().get().IsValid()
-
     cpdef py_bool CanGoBack(self):
         return self.GetCefBrowser().get().CanGoBack()
 
@@ -436,16 +428,18 @@ cdef class PyBrowser:
                 "Browser.GetFocusedFrame() may only be called on UI thread")
         return GetPyFrame(self.GetCefBrowser().get().GetFocusedFrame())
 
-    cpdef PyFrame GetFrame(self, py_string name):
+    cpdef PyFrame GetFrameByName(self, py_string name):
         assert IsThread(TID_UI), (
-                "Browser.GetFrame() may only be called on the UI thread")
+                "Browser.GetFrameByName() may only be called on the UI thread")
         cdef CefString cefName
         PyToCefString(name, cefName)
-        return GetPyFrame(self.GetCefBrowser().get().GetFrame(cefName))
+        return GetPyFrame(self.GetCefBrowser().get().GetFrameByName(cefName))
 
-    cpdef object GetFrameByIdentifier(self, object identifier):
-        return GetPyFrame(self.GetCefBrowser().get().GetFrame(
-                <int64_t>identifier))
+    cpdef object GetFrameByIdentifier(self, py_string identifier):
+        cdef CefString cefIdentifier
+        PyToCefString(identifier, cefIdentifier)
+        return GetPyFrame(self.GetCefBrowser().get().GetFrameByIdentifier(
+                cefIdentifier))
 
     cpdef list GetFrameNames(self):
         assert IsThread(TID_UI), (
@@ -466,7 +460,7 @@ cdef class PyBrowser:
         cdef PyFrame frame
         cdef list frames = []
         for name in names:
-            frame = self.GetFrame(name)
+            frame = self.GetFrameByName(name)
             frames.append(frame)
         return frames
 
@@ -586,60 +580,13 @@ cdef class PyBrowser:
     cpdef py_void ShowDevTools(self):
         cdef CefWindowInfo window_info
         IF UNAME_SYSNAME == "Windows":
-            # On Windows with empty window_info structure the devtools
-            # window doesn't appear.
-            window_info.SetAsPopup(
-                    # TODO:
-                    # According to docs this returns NULL for non-popup
-                    # windows, so looks like we shouldn't use that and
-                    # either pass NULL or GetWindowHandle().
-                    <CefWindowHandle>self.GetOpenerWindowHandle(),
-                    PyToCefStringValue("DevTools"))
+            window_info.SetAsPopup(<CefWindowHandle>self.GetWindowHandle(),
+                                   PyToCefStringValue("DevTools"))
         cdef CefBrowserSettings settings
         cdef CefPoint inspect_element_at
         self.GetCefBrowserHost().get().ShowDevTools(
                 window_info, <CefRefPtr[CefClient]?>nullptr, settings,
                 inspect_element_at)
-
-
-    cpdef py_void PrintToPdf(self, py_string filepath, dict settings, object func = None):
-        self.SetClientCallback('OnPdfPrintFinished', func)
-        cdef CefPdfPrintSettings pdf_print_settings
-        pdf_print_settings.margin_type = settings.get('margin_type') or cef_types.PDF_PRINT_MARGIN_DEFAULT
-        pdf_print_settings.display_header_footer = int((bool(settings.get('display_header_footer') or
-                                                             settings.get('header_template') or
-                                                             settings.get('footer_template', ""))))
-        if settings.get('page_ranges'):
-            pages_range = new CefString(&pdf_print_settings.page_ranges)
-            PyToCefStringPointer(settings.get('page_ranges'), pages_range)
-            del pages_range
-        pdf_print_settings.landscape = settings.get('landscape') or 0
-        pdf_print_settings.print_background = settings.get('print_background') or 0
-        pdf_print_settings.paper_width = settings.get('paper_width') or 0.0
-        pdf_print_settings.paper_height = settings.get('paper_height') or 0.0
-        if pdf_print_settings.margin_type == cef_types.PDF_PRINT_MARGIN_CUSTOM:
-            pdf_print_settings.margin_top = settings.get('margin_top') or 0.0
-            pdf_print_settings.margin_right = settings.get('margin_right') or 0.0
-            pdf_print_settings.margin_left = settings.get('margin_left') or 0.0
-            pdf_print_settings.margin_bottom = settings.get('margin_bottom') or 0.0
-        pdf_print_settings.scale = settings.get('scale') or 0.0
-        
-        if settings.get('header_template'):
-            header_template = new CefString(&pdf_print_settings.header_template)
-            PyToCefStringPointer(settings.get('header_template'), header_template)
-            del header_template
-        if settings.get('footer_template'):
-            footer_template = new CefString(&pdf_print_settings.footer_template)
-            PyToCefStringPointer(settings.get('footer_template'), footer_template)
-            del footer_template
-
-        cdef CefString cef_file_path
-        PyToCefString(filepath, cef_file_path)
-
-        cdef CefRefPtr[CefPdfPrintCallback] pdf_callback = <CefRefPtr[
-            CefPdfPrintCallback]?> new PdfPrintCallback(self.cefBrowser)
-        self.GetCefBrowserHost().get().PrintToPDF(cef_file_path, pdf_print_settings, pdf_callback)
-
 
     cpdef py_void StopLoad(self):
         self.GetCefBrowser().get().StopLoad()
@@ -711,7 +658,7 @@ cdef class PyBrowser:
                     right = monitorInfo.rcMonitor.right
                     bottom = monitorInfo.rcMonitor.bottom
                     # noinspection PyUnresolvedReferences
-                    SetWindowPos(hwnd, NULL,
+                    SetWindowPos(hwnd, nullptr,
                             left, top, right-left, bottom-top,
                             SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED)
             else:
@@ -721,7 +668,7 @@ cdef class PyBrowser:
                 if not for_metro:
                     (left, top, right, bottom) = self.windowRect
                     # noinspection PyUnresolvedReferences
-                    SetWindowPos(hwnd, NULL,
+                    SetWindowPos(hwnd, nullptr,
                             int(left), int(top),
                             int(right-left), int(bottom-top),
                             SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED)
@@ -785,12 +732,22 @@ cdef class PyBrowser:
         self.GetCefBrowserHost().get().SendMouseWheelEvent(mouseEvent,
                 deltaX, deltaY)
 
+    # cpdef py_void SendFocusEvent(self, py_bool setFocus):
+    #     self.GetCefBrowserHost().get().SendFocusEvent(bool(setFocus))
+
     cpdef py_void SendCaptureLostEvent(self):
         self.GetCefBrowserHost().get().SendCaptureLostEvent()
 
     cpdef py_void StartDownload(self, py_string url):
         self.GetCefBrowserHost().get().StartDownload(PyToCefStringValue(
                 url))
+
+    # cpdef py_void SetMouseCursorChangeDisabled(self, py_bool disabled):
+    #     self.GetCefBrowserHost().get().SetMouseCursorChangeDisabled(
+    #             bool(disabled))
+
+    # cpdef py_bool IsMouseCursorChangeDisabled(self):
+    #     return self.GetCefBrowserHost().get().IsMouseCursorChangeDisabled()
 
     cpdef py_bool TryCloseBrowser(self):
         return self.GetCefBrowserHost().get().TryCloseBrowser()
@@ -804,8 +761,28 @@ cdef class PyBrowser:
     cpdef py_void NotifyScreenInfoChanged(self):
         self.GetCefBrowserHost().get().NotifyScreenInfoChanged()
 
-    cpdef py_void SendExternalBeginFrame(self):
-        self.GetCefBrowserHost().get().SendExternalBeginFrame()
+    # cdef void SendProcessMessage(self, cef_process_id_t targetProcess,
+    #         object frameId, py_string messageName, list pyArguments
+    #         ) except *:
+    #     cdef CefRefPtr[CefProcessMessage] message = \
+    #             CefProcessMessage_Create(PyToCefStringValue(messageName))
+    #     # This does not work, no idea why, the CEF implementation
+    #     # seems not to allow it, both Assign() and swap() do not work:
+    #     # | message.get().GetArgumentList().Assign(arguments.get())
+    #     # | message.get().GetArgumentList().swap(arguments)
+    #     cdef CefRefPtr[CefListValue] messageArguments = \
+    #             message.get().GetArgumentList()
+    #     PyListToExistingCefListValue(self.GetIdentifier(), frameId,
+    #             pyArguments, messageArguments)
+    #     Debug("SendProcessMessage(): message=%s, arguments size=%d" % (
+    #             messageName,
+    #             message.get().GetArgumentList().get().GetSize()))
+    #     cdef cpp_bool success = \
+    #             self.GetCefBrowser().get().GetMainFrame().SendProcessMessage(
+    #                     targetProcess, message)
+    #     if not success:
+    #         raise Exception("Browser.SendProcessMessage() failed: "\
+    #                 "messageName=%s" % messageName)
 
     # -------------------------------------------------------------------------
     # OSR drag & drop

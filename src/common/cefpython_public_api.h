@@ -1,4 +1,3 @@
-
 // Copyright (c) 2012 CEF Python, see the Authors file.
 // All rights reserved. Licensed under BSD 3-clause license.
 // Project website: https://github.com/cztomczak/cefpython
@@ -55,6 +54,8 @@
 #include "../../build/build_cefpython/cefpython_py310_fixed.h"
 #elif PY_MINOR_VERSION == 11
 #include "../../build/build_cefpython/cefpython_py311_fixed.h"
+#elif PY_MINOR_VERSION == 12
+#include "../../build/build_cefpython/cefpython_py312_fixed.h"
 #endif // PY_MINOR_VERSION
 #endif // PY_MAJOR_VERSION
 

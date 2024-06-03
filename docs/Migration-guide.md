@@ -50,6 +50,7 @@ Table of contents:
 * [v66+ cef.Request.Flags changed](#v66-cefrequestflags-changed)
 * [v66+ RequestHandler.GetCookieManager not getting called in some cases](#v66-requesthandlergetcookiemanager-not-getting-called-in-some-cases)
 * [v66+ Changes to Mac apps that integrate into existing message loop (Qt, wxPython)](#v66-changes-to-mac-apps-that-integrate-into-existing-message-loop-qt-wxpython)
+* [v66.1+ Navigation urls passed to CreateBrowserSync or LoadUrl methods need to be encoded by app code](#v661-navigation-urls-passed-to-createbrowsersync-or-loadurl-methods-need-to-be-encoded-by-app-code)
 * [v67+ Do not call the 'WindowUtils.OnSize' function](#v67-do-not-call-the-windowutilsonsize-function)
 
 
@@ -166,7 +167,7 @@ which sets DPI awareness only for the main process.
 The `ApplicationSettings`.[auto_zooming](../api/ApplicationSettings.md#auto_zooming)
 option has a default value of an empty string now. Previously the
 default was "system_dpi". When enabling High DPI support you should
-set it to "system_dpi" explicitly.
+set it to "system_dpi" explicitilly.
 
 Note that `DpiAware`.[CalculateWindowSize](../api/DpiAware.md#calculatewindowsize)
 does not handle all DPI settings (e.g. 132% on Windows 10).
@@ -382,7 +383,7 @@ function instead.
 The ApplicationSettings.[auto_zooming](../api/ApplicationSettings.md#auto_zooming)
 option should have its value set to an empty string (a default now)
 for High DPI support. In previous versions the default value was
-"system_dpi" and if you have set it explicitly in your application,
+"system_dpi" and if you have set it explicitilly in your application,
 then you should change it to an empty string now.
 
 
@@ -416,7 +417,7 @@ callback has a new param `user_gesture`.
 ## v66+ Window transparency changes
 
 1. OSR windows (off-screen rendering, also known as windowless) are now
-transparent by default. You can control its transparency with
+transparent by default. You can control its transperency with
 ApplicationSettings.[background_color](../api/ApplicationSettings.md#background_color) and BrowserSettings.[background_color](../api/BrowserSettings.md#background_color) options.
 The WindowInfo.`SetTransparentPainting` method is now deprecated. Calling
 it with True will do nothing, and calling it with False **will result
@@ -487,6 +488,16 @@ tested of how this change affects performance.
 
 See Issue [#442](../../../issues/442) for more details on the issues.
 
+## v66.1+ Navigation urls passed to CreateBrowserSync or LoadUrl methods need to be encoded by app code
+
+[Issue #384](../../../issues/384) fixes problems with browser failing to load
+urls containing certain characters by not encoding the url anymore. From now
+on it is required for the app code to encode the url properly. You can use
+the `pathlib.PurePath.as_uri` in Python 3 or `urllib.pathname2url` in
+Python 2 (`urllib.request.pathname2url` in Python 3) depending on your case.
+
+The `cef.GetNavigateUrl` function was removed from the cefpython3 module.
+
 
 ## v67+ Do not call the 'WindowUtils.OnSize' function
 
@@ -495,4 +506,3 @@ Call instead the new `WindowUtils`.[UpdateBrowserSize](../api/WindowUtils.md#upd
 function. Except when you use the `pywin32.py` example, in such case
 `WindowUtils.OnSize` must be called.
 See [Issue #464](../../../issues/464) for more details.
-

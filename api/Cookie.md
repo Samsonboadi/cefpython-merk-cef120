@@ -31,10 +31,6 @@ Table of contents:
   * [GetHasExpires](#gethasexpires)
   * [SetExpires](#setexpires)
   * [GetExpires](#getexpires)
-  * [SetSameSite](#setsamesite)
-  * [GetSameSite](#getsamesite)
-  * [SetPriority](#setpriority)
-  * [GetPriority](#getpriority)
 
 
 ## Methods
@@ -60,8 +56,6 @@ The cookie may have the following keys:
 - lastAccess (datetime.datetime)  
 - hasExpires (bool)  
 - expires (datetime.datetime)  
-- sameSite (int)
-- priority (int)
 
 
 ### Get
@@ -267,41 +261,3 @@ Set the cookie expiration date. You should also call SetHasExpires().
 | __Return__ | datetime.datetime |
 
 Get the expires property.
-
-
-### SetSameSite
-
-| Parameter | Type |
-| --- | --- |
-| sameSite | int |
-| __Return__ | void |
-
-Set the cookie same_site.
-
-
-### GetSameSite
-
-| | |
-| --- | --- |
-| __Return__ | int |
-
-Get the same_site property.
-
-
-### SetPriority
-
-| Parameter | Type |
-| --- | --- |
-| priority | int |
-| __Return__ | void |
-
-Set the cookie priority.
-
-
-### GetPriority
-
-| | |
-| --- | --- |
-| __Return__ | int |
-
-Get the priority property.

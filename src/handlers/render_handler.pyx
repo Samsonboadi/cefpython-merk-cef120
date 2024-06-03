@@ -7,6 +7,7 @@ include "../browser.pyx"
 include "../string_utils.pyx"
 
 cimport cef_types
+from libc.stdint cimport uint32_t
 from cef_types cimport CefRange
 
 # cef_paint_element_type_t, PaintElementType
@@ -51,28 +52,35 @@ cdef public cpp_bool RenderHandler_GetRootScreenRect(
         (exc_type, exc_value, exc_trace) = sys.exc_info()
         sys.excepthook(exc_type, exc_value, exc_trace)
 
-cdef public void RenderHandler_GetViewRect(
+cdef public cpp_bool RenderHandler_GetViewRect(
         CefRefPtr[CefBrowser] cefBrowser,
         CefRect& cefRect
         ) except * with gil:
     cdef PyBrowser pyBrowser
     cdef list pyRect = []
+    cdef py_bool ret
     try:
         pyBrowser = GetPyBrowser(cefBrowser, "GetViewRect")
         callback = pyBrowser.GetClientCallback("GetViewRect")
         if callback:
-            callback(browser=pyBrowser, rect_out=pyRect)
-            assert (pyRect and len(pyRect) == 4), "rectangle not provided"
-            cefRect.x = pyRect[0]
-            cefRect.y = pyRect[1]
-            cefRect.width = pyRect[2]
-            cefRect.height = pyRect[3]
+            ret = callback(browser=pyBrowser, rect_out=pyRect)
+            if ret:
+                assert (pyRect and len(pyRect) == 4), "rectangle not provided"
+                cefRect.x = pyRect[0]
+                cefRect.y = pyRect[1]
+                cefRect.width = pyRect[2]
+                cefRect.height = pyRect[3]
+                return True
+            else:
+                return False
         else:
+            # without a default cefRect, pysdl2 example will fail
+            # the value is inspired by https://github.com/obsproject/obs-browser/blob/master/browser-client.cpp#L280
             cefRect.x = 0
             cefRect.y = 0
-            cefRect.width = 800
-            cefRect.height = 600
-
+            cefRect.width = 16
+            cefRect.height = 16
+            return True
     except:
         (exc_type, exc_value, exc_trace) = sys.exc_info()
         sys.excepthook(exc_type, exc_value, exc_trace)
@@ -212,45 +220,6 @@ cdef public void RenderHandler_OnPaint(
                     paint_buffer=paintBuffer,
                     width=width,
                     height=height)
-        else:
-            return
-    except:
-        (exc_type, exc_value, exc_trace) = sys.exc_info()
-        sys.excepthook(exc_type, exc_value, exc_trace)
-
-cdef public void RenderHandler_OnAcceleratedPaint(
-        CefRefPtr[CefBrowser] cefBrowser,
-        cef_types.cef_paint_element_type_t paintElementType,
-        cpp_vector[CefRect]& cefDirtyRects,
-        void* shared_handle
-        ) except * with gil:
-    cdef PyBrowser pyBrowser
-    cdef list pyDirtyRects = []
-    cdef list pyRect
-    # TODO: cefDirtyRects should be const, but const_iterator is
-    #       not yet implemented in libcpp.vector.
-    cdef cpp_vector[CefRect].iterator iterator
-    cdef CefRect cefRect
-    try:
-        pyBrowser = GetPyBrowser(cefBrowser, "OnAcceleratedPaint")
-        iterator = cefDirtyRects.begin()
-        while iterator != cefDirtyRects.end():
-            cefRect = deref(iterator)
-            pyRect = [cefRect.x, cefRect.y, cefRect.width, cefRect.height]
-            pyDirtyRects.append(pyRect)
-            preinc(iterator)
-
-        # In CEF 1 width and height were fetched using GetSize(),
-        # but in CEF 3 they are passed as arguments to OnPaint().
-        # OFF: | (width, height) = pyBrowser.GetSize(paintElementType)
-
-        callback = pyBrowser.GetClientCallback("OnAcceleratedPaint")
-        if callback:
-            callback(
-                    browser=pyBrowser,
-                    element_type=paintElementType,
-                    dirty_rects=pyDirtyRects,
-                    shared_handle=<object>shared_handle)
         else:
             return
     except:

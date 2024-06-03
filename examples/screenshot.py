@@ -36,6 +36,7 @@ NOTE: There are limits in Chromium on viewport size. For some
 """
 
 from cefpython3 import cefpython as cef
+from pkg_resources import parse_version
 import os
 import platform
 import subprocess
@@ -99,7 +100,7 @@ def check_versions():
            ver=platform.python_version(),
            arch=platform.architecture()[0]))
     print("[screenshot.py] Pillow {ver}".format(ver=PILLOW_VERSION))
-    assert float(cef.__version__) >= 57.0, "CEF Python v57.0+ required to run this"
+    assert parse_version(cef.__version__) >= parse_version("57.0"), "CEF Python v57.0+ required to run this"
 
 
 def command_line_arguments():
@@ -139,8 +140,10 @@ def create_browser(settings):
     browser = cef.CreateBrowserSync(window_info=window_info,
                                     settings=settings,
                                     url=URL)
+    print('created browser ', browser)
     browser.SetClientHandler(LoadHandler())
     browser.SetClientHandler(RenderHandler())
+    # browser.SendFocus(True)
     # You must call WasResized at least once to let know CEF that
     # viewport size is available and that OnPaint may be called.
     browser.WasResized()
@@ -157,6 +160,8 @@ def save_screenshot(browser):
                             "raw", "RGBA", 0, 1)
     image.save(SCREENSHOT_PATH, "PNG")
     print("[screenshot.py] Saved image: {path}".format(path=SCREENSHOT_PATH))
+    # See comments in exit_app() why PostTask must be used
+    cef.PostTask(cef.TID_UI, exit_app, browser)
 
 
 def open_with_default_application(path):
@@ -187,9 +192,10 @@ class LoadHandler(object):
             # Loading is complete
             sys.stdout.write(os.linesep)
             print("[screenshot.py] Web page loading is complete")
-            save_screenshot(browser)
-            # See comments in exit_app() why PostTask must be used
-            cef.PostTask(cef.TID_UI, exit_app, browser)
+            print("[screenshot.py] Will save screenshot in 2 seconds")
+            # Give up to 2 seconds for the OnPaint call. Most of the time
+            # it is already called, but sometimes it may be called later.
+            cef.PostDelayedTask(cef.TID_UI, 2000, save_screenshot, browser)
 
     def OnLoadError(self, browser, frame, error_code, failed_url, **_):
         """Called when the resource load for a navigation fails
@@ -216,6 +222,7 @@ class RenderHandler(object):
         provided."""
         # rect_out --> [x, y, width, height]
         rect_out.extend([0, 0, VIEWPORT_SIZE[0], VIEWPORT_SIZE[1]])
+        return True
 
     def OnPaint(self, browser, element_type, paint_buffer, **_):
         """Called when an element should be painted."""

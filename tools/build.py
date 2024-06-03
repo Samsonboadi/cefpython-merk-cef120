@@ -18,12 +18,15 @@ Option 2: Use the automate.py tool. With this tool you can build CEF
 from sources or use ready binaries from Spotify Automated Builds.
 
 Usage:
-    build.py VERSION [--rebuild-cpp] [--fast] [--clean] [--kivy]
-                     [--hello-world]
+    build.py VERSION [--rebuild-cpp] [--unittests] [--fast] [--clean] [--kivy]
+                     [--hello-world] [--enable-profiling]
+                     [--enable-line-tracing]
 
 Options:
     VERSION                Version number eg. 50.0
-    --no-run-examples      Do not run examples after build, only unit tests
+    --unittests            Run only unit tests. Do not run examples while
+                           building cefpython modules. Examples require
+                           interaction such as closing window before proceeding.
     --fast                 Fast mode
     --clean                Clean C++ projects build files on Linux/Mac
     --kivy                 Run only Kivy example
@@ -79,7 +82,7 @@ except NameError:
 # Command line args variables
 SYS_ARGV_ORIGINAL = None
 VERSION = ""
-NO_RUN_EXAMPLES = False
+UNITTESTS = False
 DEBUG_FLAG = False
 FAST_FLAG = False
 CLEAN_FLAG = False
@@ -116,23 +119,16 @@ def main():
               .format(pyver=PYVERSION))
         global FIRST_RUN
         FIRST_RUN = True
-    print("[build.py]   ===== Clearing cache =====")
     clear_cache()
-
-    print("[build.py]   ===== Copy&Fix PYX =====")
     copy_and_fix_pyx_files()
-
-    print("[build.py]   ===== Build FIX HEADER module =====")
-    fix_cefpython_api_header_file()
-
-    print("[build.py]   ===== Build CEFPYTHON module =====")
     build_cefpython_module()
+    fix_cefpython_api_header_file()
     install_and_run()
 
 
 def command_line_args():
     global DEBUG_FLAG, FAST_FLAG, CLEAN_FLAG, KIVY_FLAG, HELLO_WORLD_FLAG, \
-           REBUILD_CPP, VERSION, NO_RUN_EXAMPLES
+           REBUILD_CPP, VERSION, UNITTESTS
 
     VERSION = get_version_from_command_line_args(__file__)
     # Other scripts called by this script expect that version number
@@ -147,10 +143,10 @@ def command_line_args():
     global SYS_ARGV_ORIGINAL
     SYS_ARGV_ORIGINAL = copy.copy(sys.argv)
 
-    if "--no-run-examples" in sys.argv:
-        NO_RUN_EXAMPLES = True
-        print("[build.py] Running examples disabled (--no-run-examples)")
-        sys.argv.remove("--no-run-examples")
+    if "--unittests" in sys.argv:
+        UNITTESTS = True
+        print("[build.py] Running examples disabled (--unittests)")
+        sys.argv.remove("--unittests")
 
     if "--debug" in sys.argv:
         DEBUG_FLAG = True
@@ -212,15 +208,13 @@ def check_cython_version():
     print("[build.py] Check Cython version")
     with open(os.path.join(TOOLS_DIR, "requirements.txt"), "rb") as fileobj:
         contents = fileobj.read().decode("utf-8")
-        match = re.search(r"cython\s*==\s*([\w.]+)", contents,
+        match = re.search(r"cython\s*==\s*([\d.]+)", contents,
                           flags=re.IGNORECASE)
         assert match, "cython package not found in requirements.txt"
         require_version = match.group(1)
-        print("Cython version required: {0}".format(require_version))
     try:
         import Cython
         version = Cython.__version__
-        print("Cython version: {0}".format(version))
     except ImportError:
         # noinspection PyUnusedLocal
         Cython = None
@@ -713,16 +707,15 @@ def generate_cefpython_module_variables():
     """Global variables that will be appended to cefpython.pyx sources."""
     ret = ('__version__ = "{0}"\n'.format(VERSION))
     version = get_cefpython_version()
-    hashes = get_cefpython_api_hash()
     chrome_version = "{0}.{1}.{2}.{3}".format(
             version["CHROME_VERSION_MAJOR"], version["CHROME_VERSION_MINOR"],
             version["CHROME_VERSION_BUILD"], version["CHROME_VERSION_PATCH"])
     ret += ('__chrome_version__ = "{0}"\n'.format(chrome_version))
     ret += ('__cef_version__ = "{0}"\n'.format(version["CEF_VERSION"]))
     ret += ('__cef_api_hash_platform__ = "{0}"\n'
-            .format(hashes["CEF_API_HASH_PLATFORM"]))
+            .format(version["CEF_API_HASH_PLATFORM"]))
     ret += ('__cef_api_hash_universal__ = "{0}"\n'
-            .format(hashes["CEF_API_HASH_UNIVERSAL"]))
+            .format(version["CEF_API_HASH_UNIVERSAL"]))
     ret += ('__cef_commit_hash__ = "{0}"\n'
             .format(version["CEF_COMMIT_HASH"]))
     ret += ('__cef_commit_number__ = "{0}"\n'
@@ -789,6 +782,7 @@ def build_cefpython_module():
                        enable_line_tracing=enable_line_tracing))
     if FAST_FLAG:
         command += " --fast"
+    print('cython:', command)
     ret = subprocess.call(command, shell=True)
 
     # if DEBUG_FLAG:
@@ -923,7 +917,7 @@ def install_and_run():
         sys.exit(1)
 
     # Run examples
-    if not NO_RUN_EXAMPLES:
+    if not UNITTESTS:
         print("[build.py] Run examples")
         os.chdir(EXAMPLES_DIR)
         flags = ""

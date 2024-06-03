@@ -9,7 +9,9 @@
 #endif
 
 #include "common/cefpython_public_api.h"
+
 #include "include/cef_request_context_handler.h"
+#include "include/base/cef_callback.h"
 
 class RequestContextHandler :
         public CefRequestContextHandler
@@ -28,6 +30,8 @@ public:
     void SetBrowser(CefRefPtr<CefBrowser> browser) {
         browser_ = browser;
     }
+
+    // virtual CefRefPtr<CefCookieManager> GetCookieManager() override;
 
 private:
     IMPLEMENT_REFCOUNTING(RequestContextHandler);

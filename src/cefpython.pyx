@@ -144,16 +144,12 @@ IF PY_MAJOR_VERSION == 2:
     # noinspection PyUnresolvedReferences
     import urlparse
     # noinspection PyUnresolvedReferences
-    from urllib import pathname2url as urllib_pathname2url
-    # noinspection PyUnresolvedReferences
     from urllib import urlencode as urllib_urlencode
     from urllib import quote as urlparse_quote
 ELSE:
     # noinspection PyUnresolvedReferences
     from urllib import parse as urlparse
     from urllib.parse import quote as urlparse_quote
-    # noinspection PyUnresolvedReferences
-    from urllib.request import pathname2url as urllib_pathname2url
     # noinspection PyUnresolvedReferences
     from urllib.parse import urlencode as urllib_urlencode
 
@@ -194,15 +190,10 @@ from libcpp.pair cimport pair as cpp_pair
 from libcpp.vector cimport vector as cpp_vector
 # noinspection PyUnresolvedReferences
 from libcpp.string cimport string as cpp_string
-
-# noinspection PyUnresolvedReferences
-from libcpp.memory cimport unique_ptr as cpp_unique_ptr
-
-# noinspection PyUnresolvedReferences
-from libcpp cimport nullptr
-
 # noinspection PyUnresolvedReferences
 from wstring cimport wstring as cpp_wstring
+# noinspection PyUnresolvedReferences
+from libcpp.memory cimport unique_ptr
 # noinspection PyUnresolvedReferences
 from libc.string cimport strlen
 # noinspection PyUnresolvedReferences
@@ -225,8 +216,6 @@ from libc.stdlib cimport atoi
 # Circular imports are allowed in form "cimport ...", but won't work if you do
 # "from ... cimport *", this is important to know in pxd files.
 
-# noinspection PyUnresolvedReferences
-from libc.stdint cimport uint32_t
 # noinspection PyUnresolvedReferences
 from libc.stdint cimport uint64_t
 # noinspection PyUnresolvedReferences
@@ -263,7 +252,6 @@ from cef_types cimport (
     CefSettings, CefBrowserSettings, CefRect, CefSize, CefPoint,
     CefKeyEvent, CefMouseEvent, CefScreenInfo,
     PathKey, PK_DIR_EXE, PK_DIR_MODULE,
-    int32, uint32, int64, uint64,
     cef_log_severity_t,
 )
 
@@ -310,9 +298,6 @@ from main_message_loop cimport *
 from cef_views cimport *
 from cef_log cimport *
 from cef_file_util cimport *
-from print_callback cimport *
-from cef_download_handler cimport *
-from cef_download_item cimport *
 
 # -----------------------------------------------------------------------------
 # GLOBAL VARIABLES
@@ -357,6 +342,7 @@ include "settings.pyx"
 
 IF UNAME_SYSNAME == "Windows":
     include "window_utils_win.pyx"
+    include "dpi_aware_win.pyx"
 ELIF UNAME_SYSNAME == "Linux":
     include "window_utils_linux.pyx"
 ELIF UNAME_SYSNAME == "Darwin":
@@ -382,14 +368,11 @@ include "app.pyx"
 include "drag_data.pyx"
 include "helpers.pyx"
 include "image.pyx"
-include "pdf_print_handler.pyx"
-include "download_item.pyx"
 
 # Handlers
 include "handlers/accessibility_handler.pyx"
 include "handlers/browser_process_handler.pyx"
 include "handlers/display_handler.pyx"
-include "handlers/download_handler.pyx"
 include "handlers/focus_handler.pyx"
 include "handlers/javascript_dialog_handler.pyx"
 include "handlers/keyboard_handler.pyx"
@@ -490,7 +473,10 @@ def Initialize(applicationSettings=None, commandLineSwitches=None, **kwargs):
         cdef str py_module_dir = GetModuleDirectory()
         cdef CefString cef_module_dir
         PyToCefString(py_module_dir, cef_module_dir)
-
+        CefOverridePath(PK_DIR_EXE, cef_module_dir)\
+                or Debug("ERROR: CefOverridePath failed")
+        CefOverridePath(PK_DIR_MODULE, cef_module_dir)\
+                or Debug("ERROR: CefOverridePath failed")
     # END IF UNAME_SYSNAME == "Linux":
 
     if not application_settings:
@@ -503,7 +489,7 @@ def Initialize(applicationSettings=None, commandLineSwitches=None, **kwargs):
         application_settings["debug"] = True
         application_settings["log_file"] = os.path.join(os.getcwd(),
                                                         "debug.log")
-        application_settings["log_severity"] = LOGSEVERITY_VERBOSE
+        application_settings["log_severity"] = LOGSEVERITY_INFO
         sys.argv.remove("--debug")
     if "debug" in application_settings:
         g_debug = bool(application_settings["debug"])
@@ -538,8 +524,6 @@ def Initialize(applicationSettings=None, commandLineSwitches=None, **kwargs):
     if "app_user_model_id" in application_settings:
         g_commandLineSwitches["app-user-model-id"] =\
                 application_settings["app_user_model_id"]
-    if "chrome_runtime" in application_settings:
-        application_settings["chrome_runtime"] = 1
 
     # ------------------------------------------------------------------------
     # Paths
@@ -600,12 +584,8 @@ def Initialize(applicationSettings=None, commandLineSwitches=None, **kwargs):
     # ------------------------------------------------------------------------
     if not "cache_path" in application_settings:
         application_settings["cache_path"] = ""
-    if not "root_cache_path" in application_settings:
-        application_settings["root_cache_path"] = ""
-    if not application_settings["cache_path"] and \
-       not application_settings["root_cache_path"]:
+    if not application_settings["cache_path"]:
         g_commandLineSwitches["disable-gpu-shader-disk-cache"] = ""
-
 
     cdef CefRefPtr[CefApp] cefApp = <CefRefPtr[CefApp]?>new CefPythonApp()
 
@@ -638,9 +618,10 @@ def Initialize(applicationSettings=None, commandLineSwitches=None, **kwargs):
     if GetAppSetting("external_message_pump")\
             and not g_external_message_pump.get():
         Debug("Create external message pump")
+        global g_external_message_pump
         # Using .reset() here to assign new instance was causing
         # MainMessageLoopExternalPump destructor to be called. Strange.
-        g_external_message_pump.swap(MainMessageLoopExternalPump.Create())
+        g_external_message_pump = MainMessageLoopExternalPump.Create()
 
     Debug("CefInitialize()")
     cdef cpp_bool ret
@@ -747,8 +728,6 @@ def CreateBrowserSync(windowInfo=None,
     cdef CefWindowInfo cefWindowInfo
     SetCefWindowInfo(cefWindowInfo, windowInfo)
 
-    navigateUrl = GetNavigateUrl(navigateUrl)
-    Debug("navigateUrl: %s" % navigateUrl)
     cdef CefString cefNavigateUrl
     PyToCefString(navigateUrl, cefNavigateUrl)
 
@@ -759,7 +738,6 @@ def CreateBrowserSync(windowInfo=None,
 
     # Request context - part 1/2.
     createSharedRequestContext = bool(not g_shared_request_context.get())
-    cdef CefRefPtr[CefDictionaryValue] extraInfo
     cdef CefRefPtr[CefRequestContext] cefRequestContext
     cdef CefRefPtr[RequestContextHandler] requestContextHandler =\
             <CefRefPtr[RequestContextHandler]?>new RequestContextHandler(
@@ -776,14 +754,16 @@ def CreateBrowserSync(windowInfo=None,
     else:
         cefRequestContext.Assign(g_shared_request_context.get())
 
+    cdef CefRefPtr[CefDictionaryValue] extra_info
+
     # CEF browser creation.
     with nogil:
         cefBrowser = cef_browser_static.CreateBrowserSync(
                 cefWindowInfo, <CefRefPtr[CefClient]?>clientHandler,
-                cefNavigateUrl, cefBrowserSettings,
-                extraInfo, cefRequestContext)
+                cefNavigateUrl, cefBrowserSettings, extra_info,
+                cefRequestContext)
 
-    if not cefBrowser.get():
+    if not cefBrowser or not cefBrowser.get():
         Debug("CefBrowser::CreateBrowserSync() failed")
         return None
     else:

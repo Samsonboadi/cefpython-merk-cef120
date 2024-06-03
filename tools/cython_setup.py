@@ -55,9 +55,12 @@ if MAC:
         g_generate_extern_c_macro_definition_old(self, code)
         code.putln("// Added by: cefpython/tools/cython_setup.py")
         code.putln("#undef PyMODINIT_FUNC")
-
-        code.putln("#define PyMODINIT_FUNC extern \"C\""
-                   " __attribute__((visibility(\"default\"))) PyObject*")
+        if sys.version_info[:2] == (2, 7):
+            code.putln("#define PyMODINIT_FUNC extern \"C\""
+                       " __attribute__((visibility(\"default\"))) void")
+        else:
+            code.putln("#define PyMODINIT_FUNC extern \"C\""
+                       " __attribute__((visibility(\"default\"))) PyObject*")
     # Overwrite Cython function
     ModuleNode.generate_extern_c_macro_definition = (
             generate_extern_c_macro_definition)
@@ -144,21 +147,15 @@ def get_winsdk_lib():
     if WINDOWS:
         if ARCH32:
             winsdk_libs = [
+                r"C:\Program Files (x86)\Microsoft SDKs\Windows Kits\10",
                 r"C:\\Program Files\\Microsoft SDKs\\Windows\\v7.1\\Lib",
                 r"C:\\Program Files\\Microsoft SDKs\\Windows\\v7.0\\Lib",
-                # Visual Studio 2008 installation
-                r"C:\\Program Files\\Microsoft SDKs\\Windows\\v6.0A\\Lib",
             ]
         elif ARCH64:
             winsdk_libs = [
-                r"C:\Program Files (x86)\Windows Kits\10\bin\10.0.20348.0\x64",
-                r"C:\Program Files (x86)\Windows Kits\10\bin\10.0.17134.0\x64",
-                r"C:\Program Files (x86)\Windows Kits\10\bin\10.0.18362.0\x64",
-                r"C:\Program Files (x86)\Windows Kits\10\bin\10.0.17763.0\x64",
+                r"C:\Program Files (x86)\Microsoft SDKs\Windows Kits\10",
                 r"C:\\Program Files\\Microsoft SDKs\\Windows\\v7.1\\Lib\\x64",
                 r"C:\\Program Files\\Microsoft SDKs\\Windows\\v7.0\\Lib\\x64",
-                # Visual Studio 2008 installation
-                r"C:\\Program Files\\Microsoft SDKs\\Windows\\v6.0A\\Lib\\x64",
             ]
         else:
             raise Exception("Unknown architecture")
@@ -434,11 +431,12 @@ def get_ext_modules(options):
         # > Unknown Extension options: 'cython_directives' warnings.warn(msg)
         cython_directives={
             # Any conversion to unicode must be explicit using .decode().
-            "language_level": 2,
+            "language_level": 2,  # Yes, Py2 for all python versions.
             "c_string_type": "bytes",
             "c_string_encoding": "utf-8",
             "profile": ENABLE_PROFILING,
             "linetrace": ENABLE_LINE_TRACING,
+            "language_level": "2",
         },
 
         language="c++",
@@ -472,6 +470,9 @@ def compile_time_constants():
         # A way around Python 3.2 bug: UNAME_SYSNAME is not set
         contents += 'DEF UNAME_SYSNAME = "%s"\n' % platform.uname()[0]
         contents += 'DEF PY_MAJOR_VERSION = %s\n' % sys.version_info.major
+        contents += 'cdef extern from "limits.h":\n'
+        contents += '    cdef int INT_MIN\n'
+        contents += '    cdef int INT_MAX\n'
         fo.write(contents.encode("utf-8"))
 
 

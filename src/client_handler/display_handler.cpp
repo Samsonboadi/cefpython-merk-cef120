@@ -49,15 +49,6 @@ bool DisplayHandler::OnConsoleMessage(CefRefPtr<CefBrowser> browser,
                                            line);
 }
 
-bool DisplayHandler::OnCursorChange(CefRefPtr<CefBrowser> browser,
-                                   CefCursorHandle cursor,
-                                   cef_cursor_type_t type,
-                                   const CefCursorInfo& custom_cursor_info)
-{
-    REQUIRE_UI_THREAD();
-    return DisplayHandler_OnCursorChange(browser, cursor);
-}
-
 bool DisplayHandler::OnAutoResize(CefRefPtr<CefBrowser> browser,
                                   const CefSize& new_size) {
     REQUIRE_UI_THREAD();
@@ -68,4 +59,13 @@ void DisplayHandler::OnLoadingProgressChange(CefRefPtr<CefBrowser> browser,
                                              double progress) {
     REQUIRE_UI_THREAD();
     return DisplayHandler_OnLoadingProgressChange(browser, progress);
+}
+
+bool DisplayHandler::OnCursorChange(CefRefPtr<CefBrowser> browser,
+                                   CefCursorHandle cursor,
+                                   cef_cursor_type_t type,
+                                   const CefCursorInfo& custom_cursor_info)
+{
+    REQUIRE_UI_THREAD();
+    return DisplayHandler_OnCursorChange(browser, cursor);
 }

@@ -1,3 +1,5 @@
+// Copied from upstream cefclient with minor modifications.
+
 // Copyright (c) 2016 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
@@ -10,6 +12,8 @@
 #include "include/wrapper/cef_helpers.h"
 #include "main_message_loop.h"
 
+namespace {
+
 // Special timer delay placeholder value. Intentionally 32-bit for Windows and
 // OS X platform API compatibility.
 const int32_t kTimerDelayPlaceholder = INT_MAX;
@@ -18,11 +22,13 @@ const int32_t kTimerDelayPlaceholder = INT_MAX;
 // DoWork().
 const int64_t kMaxTimerDelay = 1000 / 30;  // 30fps
 
-MainMessageLoopExternalPump* g_external_message_pump = nullptr;
+::MainMessageLoopExternalPump* g_external_message_pump = nullptr;
 
+} // namespace
 
 MainMessageLoopExternalPump::MainMessageLoopExternalPump()
-    : is_active_(false), reentrancy_detected_(false) {
+  : is_active_(false),
+    reentrancy_detected_(false) {
   DCHECK(!g_external_message_pump);
   g_external_message_pump = this;
 }
@@ -37,6 +43,8 @@ MainMessageLoopExternalPump* MainMessageLoopExternalPump::Get() {
 
 void MainMessageLoopExternalPump::OnScheduleWork(int64_t delay_ms) {
   REQUIRE_MAIN_THREAD();
+  // LOG(INFO) << "MainMessageLoopExternalPump::OnScheduleWork";
+  // LOG(INFO) << delay_ms << " ms";
 
   if (delay_ms == kTimerDelayPlaceholder && IsTimerPending()) {
     // Don't set the maximum timer requested from DoWork() if a timer event is

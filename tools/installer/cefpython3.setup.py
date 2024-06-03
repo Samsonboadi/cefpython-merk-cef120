@@ -4,9 +4,11 @@
 
 """
 cefpython3 package setup.py file.
+
 Usage:
     setup.py install
     setup.py bdist_wheel [--universal]
+
 Options:
     install      Install package
     bdist_wheel  Generate wheel package. Use the --universal flag when

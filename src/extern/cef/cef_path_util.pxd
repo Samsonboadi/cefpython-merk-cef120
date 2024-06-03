@@ -8,3 +8,4 @@ from libcpp cimport bool as cpp_bool
 
 cdef extern from "include/cef_path_util.h" nogil:
     cpp_bool CefGetPath(PathKey key, CefString& path)
+    cpp_bool CefOverridePath(PathKey key, const CefString& path)

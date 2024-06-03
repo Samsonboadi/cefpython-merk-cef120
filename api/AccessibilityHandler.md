@@ -31,7 +31,7 @@ Table of contents:
 
 | Parameter | Type |
 | --- | --- |
-| value | dict |
+| value | list |
 | __Return__ | void |
 
 Called after renderer process sends accessibility tree changes to the

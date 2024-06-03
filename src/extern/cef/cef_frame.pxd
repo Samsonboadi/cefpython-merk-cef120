@@ -4,7 +4,6 @@
 
 include "compile_time_constants.pxi"
 
-from cef_types cimport int64
 from cef_string cimport CefString
 from libcpp cimport bool as cpp_bool
 from cef_ptr cimport CefRefPtr
@@ -18,7 +17,7 @@ cdef extern from "include/cef_frame.h":
       cpp_bool IsValid()
       void ExecuteJavaScript(CefString& jsCode, CefString& scriptUrl, int startLine)
       CefString GetURL()
-      int64 GetIdentifier()
+      CefString GetIdentifier()
       cpp_bool IsMain()
       void LoadURL(CefString& url)
       void Undo()
@@ -31,9 +30,10 @@ cdef extern from "include/cef_frame.h":
       void ViewSource()
       void GetSource(CefRefPtr[CefStringVisitor] visitor)
       void GetText(CefRefPtr[CefStringVisitor] visitor)
+      void LoadString(CefString& string_val, CefString& url)
       cpp_bool IsFocused()
       CefString GetName()
       CefRefPtr[CefFrame] GetParent()
       CefRefPtr[CefBrowser] GetBrowser()
-      void SendProcessMessage(CefProcessId target_process,
-                              CefRefPtr[CefProcessMessage] message)
+      cpp_bool SendProcessMessage(CefProcessId target_process,
+                                  CefRefPtr[CefProcessMessage] message)

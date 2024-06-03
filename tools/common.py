@@ -1,4 +1,3 @@
-
 # Copyright (c) 2017 CEF Python, see the Authors file.
 # All rights reserved. Licensed under BSD 3-clause license.
 # Project website: https://github.com/cztomczak/cefpython
@@ -220,23 +219,20 @@ SUBPROCESS_EXE = os.path.join(BUILD_SUBPROCESS,
 
 VS_PLATFORM_ARG = "x86" if ARCH32 else "amd64"
 
-VS2022_VCVARS = (r"C:\Program Files\Microsoft Visual Studio"
-                 r"\2022\Community\VC\Auxiliary\Build\vcvarsall.bat")
+# Python 3.5 / 3.6 / 3.7 / 3.8 / 3.9
+VS2015_VCVARS = (r"C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat")
 
-VS2019_VCVARS = (r"C:\Program Files (x86)\Microsoft Visual Studio"
-                 r"\2019\Community\VC\Auxiliary\Build\vcvarsall.bat")
+# Required for building old CEF branches < 2704
+VS2013_VCVARS = ("C:\\Program Files (x86)\\Microsoft Visual Studio 12.0"
+                 "\\VC\\vcvarsall.bat")
 
-VS2015_VCVARS = (r"C:\Program Files (x86)\Microsoft Visual Studio 14.0"
-                 r"\VC\vcvarsall.bat")
+# Python 3.4
+VS2010_VCVARS = ("C:\\Program Files (x86)\\Microsoft Visual Studio 10.0"
+                 "\\VC\\vcvarsall.bat")
 
-VS2013_VCVARS = (r"C:\Program Files (x86)\Microsoft Visual Studio 12.0"
-                 r"\VC\vcvarsall.bat")
-
-VS2010_VCVARS = (r"C:\Program Files (x86)\Microsoft Visual Studio 10.0"
-                 r"\VC\vcvarsall.bat")
-
-VS2008_VCVARS = (r"C:\Program Files (x86)\Microsoft Visual Studio 9.0"
-                 r"\VC\vcvarsall.bat")
+# Python 2.7
+VS2008_VCVARS = ("C:\\Program Files (x86)\\Microsoft Visual Studio 9.0"
+                 "\\VC\\vcvarsall.bat")
 
 if WINDOWS and not os.path.exists(VS2008_VCVARS):
     VS2008_VCVARS = (os.environ["LOCALAPPDATA"]+"\\Programs\\Common\\Microsoft"
@@ -276,7 +272,7 @@ def get_python_include_path():
     #    ~/.pyenv/versions/2.7.13/include/python2.7
     # 3) ~/.pyenv/versions/3.4.6/include/python2.7m
     # 4) /usr/include/python2.7
-    base_dir = os.path.dirname(sys.executable)
+    base_dir = sys.base_prefix
     try_dirs = ["{base_dir}/include",
                 "{base_dir}/../include/python{ver}",
                 "{base_dir}/../include/python{ver}*",
@@ -457,12 +453,6 @@ def get_cefpython_version():
     return get_version_from_file(header_file)
 
 
-def get_cefpython_api_hash():
-    """Get CEF API hash from the 'src/version/' directory."""
-    header_file = os.path.join(SRC_DIR, "version","cef_api_hash.h")
-    return get_version_from_file(header_file)
-
-
 def get_version_from_file(header_file):
     with open(header_file, "r") as fp:
         contents = fp.read()  # no need to decode() as "rU" specified
@@ -476,22 +466,26 @@ def get_version_from_file(header_file):
 
 def get_msvs_for_python(vs_prefix=False):
     """Get MSVS version (eg 2008) for current python running."""
-    if sys.version_info[:2] == (3, 4):
+    if sys.version_info[:2] == (2, 7):
+        return "VS2008" if vs_prefix else "2008"
+    elif sys.version_info[:2] == (3, 4):
         return "VS2010" if vs_prefix else "2010"
     elif sys.version_info[:2] == (3, 5):
         return "VS2015" if vs_prefix else "2015"
     elif sys.version_info[:2] == (3, 6):
         return "VS2015" if vs_prefix else "2015"
     elif sys.version_info[:2] == (3, 7):
-        return "VS2019" if vs_prefix else "2019"
+        return "VS2015" if vs_prefix else "2015"
     elif sys.version_info[:2] == (3, 8):
-        return "VS2019" if vs_prefix else "2019"
+        return "VS2015" if vs_prefix else "2015"
     elif sys.version_info[:2] == (3, 9):
-        return "VS2019" if vs_prefix else "2019"
+        return "VS2015" if vs_prefix else "2015"
     elif sys.version_info[:2] == (3, 10):
-        return "VS2022" if vs_prefix else "2022"
+        return "VS2015" if vs_prefix else "2015"
     elif sys.version_info[:2] == (3, 11):
-        return "VS2022" if vs_prefix else "2022"
+        return "VS2015" if vs_prefix else "2015"
+    elif sys.version_info[:2] == (3, 12):
+        return "VS2015" if vs_prefix else "2015"
     else:
         print("ERROR: This version of Python is not supported")
         sys.exit(1)

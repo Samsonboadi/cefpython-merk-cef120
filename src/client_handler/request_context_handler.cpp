@@ -8,3 +8,16 @@
 // --------------------------------------------------------------------------
 // CefRequestContextHandler
 // --------------------------------------------------------------------------
+
+// CefRefPtr<CefCookieManager> RequestContextHandler::GetCookieManager() {
+//     REQUIRE_IO_THREAD();
+//     if (browser_.get()) {
+//         return RequestHandler_GetCookieManager(browser_,
+//             browser_->GetMainFrame()->GetURL());
+//     } else {
+//         CefString mainUrl;
+//         return RequestHandler_GetCookieManager(browser_, mainUrl);
+//     }    
+//     // Default: return NULL.
+// }
+

@@ -12,6 +12,7 @@ from cefpython3 import cefpython as cef
 import platform
 import sys
 import os
+from pkg_resources import parse_version
 
 # Platforms
 WINDOWS = (platform.system() == "Windows")
@@ -47,7 +48,9 @@ def main():
         # the same time. This is an incorrect approach
         # and only a temporary fix.
         settings["external_message_pump"] = True
-
+    if WINDOWS:
+        # noinspection PyUnresolvedReferences, PyArgumentList
+        cef.DpiAware.EnableHighDpiSupport()
     cef.Initialize(settings=settings)
     app = CefApp(False)
     app.MainLoop()
@@ -63,7 +66,25 @@ def check_versions():
             ver=platform.python_version(), arch=platform.architecture()[0]))
     print("[wxpython.py] wxPython {ver}".format(ver=wx.version()))
     # CEF Python version requirement
-    assert cef.__version__ >= "66.0", "CEF Python v66.0+ required to run this"
+    assert parse_version(cef.__version__) >= parse_version("66.0"), "CEF Python v66.0+ required to run this"
+
+
+def scale_window_size_for_high_dpi(width, height):
+    """Scale window size for high DPI devices. This func can be
+    called on all operating systems, but scales only for Windows.
+    If scaled value is bigger than the work area on the display
+    then it will be reduced."""
+    if not WINDOWS:
+        return width, height
+    (_, _, max_width, max_height) = wx.GetClientDisplayRect().Get()
+    # noinspection PyUnresolvedReferences
+    (width, height) = cef.DpiAware.Scale((width, height))
+    if width > max_width:
+        width = max_width
+    if height > max_height:
+        height = max_height
+    return width, height
+
 
 class MainFrame(wx.Frame):
 
@@ -79,9 +100,24 @@ class MainFrame(wx.Frame):
         global g_count_windows
         g_count_windows += 1
 
+        if WINDOWS:
+            # noinspection PyUnresolvedReferences, PyArgumentList
+            print("[wxpython.py] System DPI settings: %s"
+                  % str(cef.DpiAware.GetSystemDpi()))
         if hasattr(wx, "GetDisplayPPI"):
             print("[wxpython.py] wx.GetDisplayPPI = %s" % wx.GetDisplayPPI())
         print("[wxpython.py] wx.GetDisplaySize = %s" % wx.GetDisplaySize())
+
+        print("[wxpython.py] MainFrame declared size: %s"
+              % str((WIDTH, HEIGHT)))
+        size = scale_window_size_for_high_dpi(WIDTH, HEIGHT)
+        print("[wxpython.py] MainFrame DPI scaled size: %s" % str(size))
+
+        wx.Frame.__init__(self, parent=None, id=wx.ID_ANY,
+                          title='wxPython example', size=size)
+        # wxPython will set a smaller size when it is bigger
+        # than desktop size.
+        print("[wxpython.py] MainFrame actual size: %s" % self.GetSize())
 
         self.setup_icon()
         self.create_menu()
@@ -129,25 +165,9 @@ class MainFrame(wx.Frame):
         filemenu = wx.Menu()
         filemenu.Append(1, "Some option")
         filemenu.Append(2, "Another option")
-        filemenu.Append(3, "PrintToPDF test1")
-        filemenu.Append(4, "PrintToPDF test2")
         menubar = wx.MenuBar()
         menubar.Append(filemenu, "&File")
         self.SetMenuBar(menubar)
-        self.Bind(wx.EVT_MENU, self.menu_handler)
-
-    def menu_handler(self, event):
-      id = event.GetId()
-      if id == 3:
-        self.browser.PrintToPdf('test1.pdf', {'print_background': 1})
-      if id == 4:
-        self.browser.PrintToPdf('test2.pdf', {'print_background': 1}, func=self.OnPdfFinished)
-
-    def OnPdfFinished(self, path, ok):
-        if ok:
-            print("self.OnPdfPrintFinished: ok %s" % path)
-        else:
-            print("self.OnPdfPrintFinished: error")
 
     def embed_browser(self):
         window_info = cef.WindowInfo()
@@ -156,10 +176,8 @@ class MainFrame(wx.Frame):
         window_info.SetAsChild(self.browser_panel.GetHandle(),
                                [0, 0, width, height])
         self.browser = cef.CreateBrowserSync(window_info,
-                                             url="https://github.com/cztomczak/cefpython")
+                                             url="https://www.google.com/")
         self.browser.SetClientHandler(FocusHandler())
-        self.browser.SetClientHandler(DialogHandler())
-        self.browser.SetClientHandler(PdfPrintCallback())
 
     def OnSetFocus(self, _):
         if not self.browser:
@@ -223,24 +241,6 @@ class FocusHandler(object):
             browser.SetFocus(True)
 
 
-class DialogHandler(object):
-    def OnFileDialog(self, browser, mode, title, default_file_path, accept_filters, file_dialog_callback):
-      file_real_path = os.path.realpath('test1.pdf')
-      if os.path.exists(file_real_path):
-        file_dialog_callback.Continue(0, [file_real_path])
-        return True
-      else:
-        return False
-
-
-class PdfPrintCallback(object):
-    def OnPdfPrintFinished(self, path, ok):
-        if ok:
-            print("PdfPrintCallback.OnPdfPrintFinished: ok %s" % path)
-        else:
-            print("PdfPrintCallback.OnPdfPrintFinished: error")
-
-
 class CefApp(wx.App):
 
     def __init__(self, redirect):
@@ -281,10 +281,7 @@ class CefApp(wx.App):
         self.timer.Start(10)  # 10ms timer
 
     def on_timer(self, _):
-        if MAC:
-            cef.MessageLoop()
-        else:
-            cef.MessageLoopWork()
+        cef.MessageLoopWork()
 
     def OnExit(self):
         self.timer.Stop()

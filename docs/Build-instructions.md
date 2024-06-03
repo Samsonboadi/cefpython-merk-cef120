@@ -66,8 +66,9 @@ are named "cefpythonXX" where XX is Chromium version number.
   from [here](https://www.microsoft.com/en-us/download/details.aspx?id=44266)
 
 5) For Python 2.7 and when using using "Visual C++ compiler for Python 2.7"
-   you have to install "Visual C++ 2008 Redistributable Package (x64)"
-   from [here](https://www.microsoft.com/en-us/download/details.aspx?id=15336)
+   you have to install "Visual C++ 2008 Redistributable Package"
+   from [here](https://www.microsoft.com/en-us/download/details.aspx?id=29)
+   and [here](https://www.microsoft.com/en-us/download/details.aspx?id=15336)
 
 6) Clone cefpython, checkout for example "cefpython57" branch
    that includes Chromium v57, then create a build/ directory and enter it:
@@ -164,7 +165,8 @@ requirements common for all platforms.
     * For Python 2.7 install "Microsoft Visual C++ Compiler for Python 2.7"
       from [here](https://www.microsoft.com/en-us/download/details.aspx?id=44266)
     * When using "Visual C++ compiler for Python 2.7" you have to install
-      "Microsoft Visual C++ 2008 Redistributable Package (x64)" from
+      "Microsoft Visual C++ 2008 Redistributable Package" from
+      [here](https://www.microsoft.com/en-us/download/details.aspx?id=29) and
       [here](https://www.microsoft.com/en-us/download/details.aspx?id=15336)
     * For Python 2.7 copy "cefpython/src/windows/py27/stdint.h" to
       "%LocalAppData%\Programs\Common\Microsoft\Visual C++ for Python\9.0\VC\include\"
@@ -279,7 +281,7 @@ mkdir build/
 cd build/
 ```
 
-2) Download CEF binaries from [Spotify Automated Builds](http://opensource.spotify.com/cefbuilds/index.html).
+2) Download CEF binaries from [Spotify Automated Builds](https://cef-builds.spotifycdn.com/index.html).
    The version of the binaries must match exactly the CEF version
    from the "cefpython/src/version/" directory (look for CEF_VERSION
    constant in .h file).

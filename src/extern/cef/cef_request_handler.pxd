@@ -10,3 +10,4 @@ cdef extern from "include/cef_auth_callback.h":
         void Continue(const CefString& username,
                       const CefString& password)
         void Cancel()
+
